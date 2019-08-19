@@ -1,0 +1,2 @@
+# CSCNN
+Channel Sparse CNN
