@@ -92,7 +92,7 @@ testNorm = tf.placeholder(tf.float32, shape=(test_batch_siz),
 global_steps=tf.Variable(0, trainable=False)
 #=========================================================
 #----- Training Preparation
-CNN_net = CNNLayer(in_siz, out_siz, True, klvl, alph,
+CNN_net = CNNLayer(in_siz, out_siz, False, klvl, alph,
         channel_siz, nlvl, prefixed)
 
 learning_rate = tf.train.exponential_decay(adam_learning_rate,
