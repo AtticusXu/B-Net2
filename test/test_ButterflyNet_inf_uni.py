@@ -59,7 +59,7 @@ nlvl = paras['nlvl']
 print("======== Parameters =========")
 print("Batch Size:       %6d" % (batch_siz))
 print("Channel Size:     %6d" % (channel_siz))
-print("ADAM LR:          %6.4f" % (adam_learning_rate))
+print("ADAM LR:          %10ef" % (adam_learning_rate))
 print("ADAM LR decay:    %6.4f" % (adam_learning_rate_decay))
 print("ADAM Beta1:       %6.4f" % (adam_beta1))
 print("ADAM Beta2:       %6.4f" % (adam_beta2))
@@ -86,6 +86,7 @@ testOutData = tf.placeholder(tf.float32, shape=(test_batch_siz,out_siz,1),
         name="trainOutData")
 testNorm = tf.placeholder(tf.float32, shape=(test_batch_siz),
         name="testNorm")
+global_steps=tf.Variable(0, trainable=False)
 #=========================================================
 #----- Training Preparation
 butterfly_net = ButterflyLayer(in_siz, out_siz, False,
@@ -93,7 +94,8 @@ butterfly_net = ButterflyLayer(in_siz, out_siz, False,
         in_range, out_range)
 
 learning_rate = tf.train.exponential_decay(adam_learning_rate,
-                                           max_iter,100,adam_learning_rate_decay)
+                                           global_steps,100,
+                                           adam_learning_rate_decay)
 optimizer_adam = tf.train.AdamOptimizer(learning_rate,
         adam_beta1, adam_beta2)
 
@@ -102,18 +104,22 @@ y_test_output = butterfly_net(testInData)
 
 MSE_loss_train = tf.reduce_mean(
         tf.squared_difference(trainOutData, y_train_output))
+
 L2_loss_train = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
         tf.squared_difference(trainOutData, y_train_output)),1)),trainNorm))
+
 y_norm_train = tf.reduce_mean(trainNorm)
+
 L2_loss_test = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
         tf.squared_difference(testOutData, y_test_output)),1)),testNorm))
 
 L2_loss_test_list = tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
         tf.squared_difference(testOutData, y_test_output)),1)),testNorm)
 
+Abs_loss_test_K = tf.reduce_mean(tf.squeeze(tf.sqrt(
+        tf.squared_difference(testOutData, y_test_output))),0)
 
-
-train_step = optimizer_adam.minimize(MSE_loss_train)
+train_step = optimizer_adam.minimize(MSE_loss_train,global_step=global_steps)
 
 # Initialize Variables
 init = tf.global_variables_initializer()
@@ -142,9 +148,11 @@ for it in range(max_iter):
 x_test,y_test,y_norm = gen_uni_data(freqmag,freqidx,test_batch_siz,sig)
 test_dict = {testInData: x_test, testOutData: y_test,
                   testNorm: y_norm}
-[test_loss, test_loss_list] = sess.run([L2_loss_test, L2_loss_test_list],
-                                        feed_dict=test_dict)
+[test_loss, test_loss_list, test_loss_k] = sess.run(
+        [L2_loss_test, L2_loss_test_list, Abs_loss_test_K],feed_dict=test_dict)
 print("Test Loss: %10e." % (test_loss))
+print(test_loss_k)
+
 err_list = np.log10(err_list)
 fig = plt.figure(0)
 plt.plot(epochs, err_list, 'r', label = 'Train Error')
