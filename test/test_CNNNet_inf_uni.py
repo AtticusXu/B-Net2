@@ -28,7 +28,8 @@ in_range = np.float32([0,1])
 out_range = np.float32([0,out_siz//2])
 
 freqidx = range(out_siz//2)
-freqmag = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),[0,0,0,0],[sig,sig,sig,sig]))
+freqmag = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),
+                                       [0,0,0,0],[sig,sig,sig,sig]))
 freqmag[N//2] = 0
 
 #=========================================================
@@ -58,7 +59,7 @@ print("======== Parameters =========")
 print("Batch Size:       %6d" % (batch_siz))
 print("Channel Size:     %6d" % (channel_siz))
 print("Alpha:            %6d" % (alph))
-print("ADAM LR:          %6.4f" % (adam_learning_rate))
+print("ADAM LR:          %10e" % (adam_learning_rate))
 print("ADAM LR decay:    %6.4f" % (adam_learning_rate_decay))
 print("ADAM Beta1:       %6.4f" % (adam_beta1))
 print("ADAM Beta2:       %6.4f" % (adam_beta2))
@@ -88,13 +89,15 @@ testOutData = tf.placeholder(tf.float32, shape=(test_batch_siz,out_siz,1),
         name="trainOutData")
 testNorm = tf.placeholder(tf.float32, shape=(test_batch_siz),
         name="testNorm")
+global_steps=tf.Variable(0, trainable=False)
 #=========================================================
 #----- Training Preparation
 CNN_net = CNNLayer(in_siz, out_siz, True, klvl, alph,
         channel_siz, nlvl, prefixed)
 
 learning_rate = tf.train.exponential_decay(adam_learning_rate,
-                                           max_iter,100,adam_learning_rate_decay)
+                                           global_steps,100,
+                                           adam_learning_rate_decay)
 optimizer_adam = tf.train.AdamOptimizer(learning_rate,
         adam_beta1, adam_beta2)
 
@@ -112,8 +115,10 @@ L2_loss_test = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
 L2_loss_test_list = tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
         tf.squared_difference(testOutData, y_test_output)),1)),testNorm)
 
+Abs_loss_test_K = tf.reduce_mean(tf.squeeze(tf.sqrt(
+        tf.squared_difference(testOutData, y_test_output))),0)
 
-train_step = optimizer_adam.minimize(MSE_loss_train)
+train_step = optimizer_adam.minimize(MSE_loss_train,global_step=global_steps)
 
 # Initialize Variables
 init = tf.global_variables_initializer()
@@ -132,7 +137,8 @@ for it in range(max_iter):
     train_dict = {trainInData: x_train, trainOutData: y_train,
                   trainNorm: y_norm}
     if it % report_freq == 0:
-        [temp_train_loss,y_norm] = sess.run([L2_loss_train,y_norm_train],feed_dict=train_dict)
+        [temp_train_loss,y_norm] = sess.run(
+                [L2_loss_train,y_norm_train],feed_dict=train_dict)
         print("Iter # %6d: Train Loss: %10e. %10e" % (it,temp_train_loss,y_norm))
     if it % record_freq == 0:
         err_list[it//record_freq] = temp_train_loss
@@ -141,9 +147,11 @@ for it in range(max_iter):
 x_test,y_test,y_norm = gen_uni_data(freqmag,freqidx,test_batch_siz,sig)
 test_dict = {testInData: x_test, testOutData: y_test,
                   testNorm: y_norm}
-[test_loss, test_loss_list] = sess.run([L2_loss_test, L2_loss_test_list],
-                                        feed_dict=test_dict)
+[test_loss, test_loss_list, test_loss_k] = sess.run(
+        [L2_loss_test, L2_loss_test_list, Abs_loss_test_K],feed_dict=test_dict)
 print("Test Loss: %10e." % (test_loss))
+print(test_loss_k)
+
 err_list = np.log10(err_list)
 fig = plt.figure(0)
 plt.plot(epochs, err_list, 'r', label = 'Train Error')
