@@ -28,10 +28,11 @@ in_range = np.float32([0,1])
 out_range = np.float32([0,out_siz//2])
 
 freqidx = range(out_siz//2)
-freqmag = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),
-                                       [0,0,0,0],[sig,sig,sig,sig]))
-freqmag[N//2] = 0
 
+freqmag = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),
+                                       [0],[sig]))
+freqmag[N//2] = 0
+print(freqmag[0:out_siz//2])
 #=========================================================
 #----- Parameters Setup
 
@@ -73,8 +74,6 @@ print("Out Range:       (%6.2f, %6.2f)" % (out_range[0], out_range[1]))
 
 #=========================================================
 #----- Variable Preparation
-sess = tf.Session()
-
 sess = tf.Session()
 
 trainInData = tf.placeholder(tf.float32, shape=(batch_siz,in_siz,1),
@@ -164,7 +163,10 @@ print("Test Loss: %10e." % (test_loss))
 for i in range(8):
     K_list[i,:] = np.sqrt(K_list[2*i,:] + K_list[2*i+1,:])
     test_loss_k[i] = np.sqrt(test_loss_k[2*i] + test_loss_k[2*i+1])
-print(test_loss_k[0:7])
+K_list = K_list[0:out_siz//2,:]
+test_loss_k = test_loss_k[0:out_siz//2]
+print(test_loss_k)
+
 err_list = np.log10(err_list)
 K_list = np.log10(K_list)
 fig = plt.figure(0,figsize=(10,8))
