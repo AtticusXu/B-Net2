@@ -106,17 +106,23 @@ y_test_output = CNN_net(testInData)
 
 MSE_loss_train = tf.reduce_mean(
         tf.squared_difference(trainOutData, y_train_output))
+
 L2_loss_train = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
         tf.squared_difference(trainOutData, y_train_output)),1)),trainNorm))
+
+Sqr_loss_train_K = tf.reduce_mean(tf.squeeze(tf.squared_difference(
+        trainOutData, y_train_output)),0)
+
 y_norm_train = tf.reduce_mean(trainNorm)
+
 L2_loss_test = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
         tf.squared_difference(testOutData, y_test_output)),1)),testNorm))
 
 L2_loss_test_list = tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
         tf.squared_difference(testOutData, y_test_output)),1)),testNorm)
 
-Abs_loss_test_K = tf.reduce_mean(tf.squeeze(tf.sqrt(
-        tf.squared_difference(testOutData, y_test_output))),0)
+Sqr_loss_test_K = tf.reduce_mean(tf.squeeze(
+        tf.squared_difference(testOutData, y_test_output)),0)
 
 train_step = optimizer_adam.minimize(MSE_loss_train,global_step=global_steps)
 
@@ -130,6 +136,7 @@ print("Total Num Paras:  %6d" % ( np.sum( [np.prod(v.get_shape().as_list())
 #----- Step by Step Training
 
 sess.run(init)
+K_list = np.zeros((out_siz,max_iter//record_freq)) 
 err_list = np.zeros(max_iter//record_freq) 
 epochs = np.linspace(0,max_iter,max_iter//record_freq)
 for it in range(max_iter):
@@ -137,24 +144,39 @@ for it in range(max_iter):
     train_dict = {trainInData: x_train, trainOutData: y_train,
                   trainNorm: y_norm}
     if it % report_freq == 0:
-        [temp_train_loss,y_norm] = sess.run(
-                [L2_loss_train,y_norm_train],feed_dict=train_dict)
-        print("Iter # %6d: Train Loss: %10e. %10e" % (it,temp_train_loss,y_norm))
+        temp_train_loss = sess.run(L2_loss_train, feed_dict=train_dict)
+        print("Iter # %6d: Train Loss: %10e." % (it,temp_train_loss))
     if it % record_freq == 0:
+        K_loss = sess.run(Sqr_loss_train_K,feed_dict=train_dict)
         err_list[it//record_freq] = temp_train_loss
+        K_list[:,it//record_freq] = K_loss
     sess.run(train_step, feed_dict=train_dict)
 
 x_test,y_test,y_norm = gen_uni_data(freqmag,freqidx,test_batch_siz,sig)
 test_dict = {testInData: x_test, testOutData: y_test,
                   testNorm: y_norm}
 [test_loss, test_loss_list, test_loss_k] = sess.run(
-        [L2_loss_test, L2_loss_test_list, Abs_loss_test_K],feed_dict=test_dict)
+        [L2_loss_test, L2_loss_test_list, Sqr_loss_test_K],feed_dict=test_dict)
 print("Test Loss: %10e." % (test_loss))
-print(test_loss_k)
 
+
+
+for i in range(8):
+    K_list[i,:] = np.sqrt(K_list[2*i,:] + K_list[2*i+1,:])
+    test_loss_k[i] = np.sqrt(test_loss_k[2*i] + test_loss_k[2*i+1])
+print(test_loss_k[0:7])
 err_list = np.log10(err_list)
-fig = plt.figure(0)
+K_list = np.log10(K_list)
+fig = plt.figure(0,figsize=(10,8))
 plt.plot(epochs, err_list, 'r', label = 'Train Error')
+plt.plot(epochs, K_list[0], 'm', label = 'Error 0')
+plt.plot(epochs, K_list[1], 'g', label = 'Error 1')
+plt.plot(epochs, K_list[2], 'y', label = 'Error 2')
+plt.plot(epochs, K_list[3], 'b', label = 'Error 3')
+plt.plot(epochs, K_list[4], 'k', label = 'Error 4')
+plt.plot(epochs, K_list[5], 'c', label = 'Error 5')
+plt.plot(epochs, K_list[6], '#B22222', label = 'Error 6')
+plt.plot(epochs, K_list[7], '#8B0000', label = 'Error 7')
 plt.title('CNN_Training Error Plot')
 plt.legend() # 添加图例
 plt.savefig("CNN_Train_Error_"+ str(prefixed)+".png" )
