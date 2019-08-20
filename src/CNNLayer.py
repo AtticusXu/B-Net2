@@ -76,10 +76,10 @@ class CNNLayer(tf.keras.layers.Layer):
         if self.prep:
             mat = np.load('tftmp/Filter_In.npy')
             self.InFilterVar = tf.Variable( mat.astype(np.float32),
-                                           name="Filter_In" )
+                                           name="Filter_In",trainable=False )
             mat = np.load('tftmp/Bias_In.npy')
             self.InBiasVar = tf.Variable( mat.astype(np.float32),
-                                         name="Bias_In" )
+                                         name="Bias_In",trainable=False )
         else:
             self.InFilterVar = tf.Variable( tf.random_normal(
                     [self.in_filter_siz, 1, self.channel_siz],0,std),
