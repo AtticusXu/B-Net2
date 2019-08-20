@@ -15,8 +15,8 @@
     "reportFreq": 10,
     "recordFreq": 100,
     "ADAMparas": {
-        "learningRate": 0.001,
-        "learningRatedecay": 0.99,
+        "learningRate": 0.0032,
+        "learningRatedecay": 0.985,
         "beta1": 0.9,
         "beta2": 0.999
     }
