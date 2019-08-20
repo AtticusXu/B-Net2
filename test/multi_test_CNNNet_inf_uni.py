@@ -133,7 +133,7 @@ print("Total Num Paras:  %6d" % ( np.sum( [np.prod(v.get_shape().as_list())
 
 #=========================================================
 #----- Step by Step Training
-S=4
+S=2
 K_list = np.zeros((S,out_siz,max_iter//record_freq)) 
 err_list = np.zeros((S,max_iter//record_freq))
 epochs = np.linspace(0,max_iter,max_iter//record_freq)
@@ -171,11 +171,11 @@ for s in range(S):
 
 err_list = np.log10(err_list)
 K_list = np.log10(K_list)
- 
-fig = plt.figure(0,figsize=(10,8))
-for s in range(S):
-    plt.plot(epochs, K_list[s,0], 'r', label = 'k = 0')
-    
-plt.title('CNN_Training Error Plot(k=0)')
-plt.savefig("CNN_Train_Error_"+ str(prefixed)+"0.png" )
+
+for k in range(out_siz//2):
+    fig = plt.figure(k,figsize=(10,8))
+    for s in range(S):
+        plt.plot(epochs, K_list[s,k], 'r', label = 'k = '+ str(k)+')')
+    plt.title('CNN_Training Error Plot(k='+ str(k)+')')
+    plt.savefig("CNN_Train_Error_"+ str(prefixed)+"_"+str(k)+".png" )
 sess.close()
