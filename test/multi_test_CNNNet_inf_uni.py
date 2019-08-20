@@ -133,7 +133,7 @@ print("Total Num Paras:  %6d" % ( np.sum( [np.prod(v.get_shape().as_list())
 
 #=========================================================
 #----- Step by Step Training
-S=20
+S=4
 K_list = np.zeros((S,out_siz,max_iter//record_freq)) 
 err_list = np.zeros((S,max_iter//record_freq))
 epochs = np.linspace(0,max_iter,max_iter//record_freq)
@@ -152,7 +152,7 @@ for s in range(S):
             K_loss = sess.run(Sqr_loss_train_K,feed_dict=train_dict)
             err_list[s,it//record_freq] = temp_train_loss
             K_list[s,:,it//record_freq] = K_loss
-            sess.run(train_step, feed_dict=train_dict)
+        sess.run(train_step, feed_dict=train_dict)
 
     x_test,y_test,y_norm = gen_uni_data(freqmag,freqidx,test_batch_siz,sig)
     test_dict = {testInData: x_test, testOutData: y_test,
@@ -166,12 +166,16 @@ for s in range(S):
     for i in range(8):
         K_list[s,i,:] = np.sqrt(K_list[s,2*i,:] + K_list[s,2*i+1,:])
         test_loss_k[i] = np.sqrt(test_loss_k[2*i] + test_loss_k[2*i+1])
-        print(test_loss_k[0:out_siz//2])
+    
+    print(test_loss_k[0:out_siz//2])
 
-    err_list = np.log10(err_list)
-    K_list = np.log10(K_list)
+err_list = np.log10(err_list)
+K_list = np.log10(K_list)
  
 fig = plt.figure(0,figsize=(10,8))
 for s in range(S):
     plt.plot(epochs, K_list[s,0], 'r', label = 'k = 0')
+    
+plt.title('CNN_Training Error Plot(k=0)')
+plt.savefig("CNN_Train_Error_"+ str(prefixed)+"0.png" )
 sess.close()
