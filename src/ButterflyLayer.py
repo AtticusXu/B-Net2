@@ -112,9 +112,9 @@ class ButterflyLayer(tf.keras.layers.Layer):
                 mat[:,0,4*it+3] = -np.multiply(KVal.imag,LVec)
 
             self.InFilterVar = tf.Variable( mat.astype(np.float32),
-                name="Filter_In" )
+                name="Filter_In" ,trainable=False )
             self.InBiasVar = tf.Variable( tf.zeros([self.channel_siz]),
-                name="Bias_In" )
+                name="Bias_In" ,trainable=False )
         else:
             self.InFilterVar = tf.Variable( tf.random_normal(
             [self.in_filter_siz, 1, self.channel_siz],0,std), name="Filter_In")
