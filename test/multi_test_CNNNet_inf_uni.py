@@ -29,9 +29,14 @@ out_range = np.float32([0,out_siz//2])
 
 freqidx = range(out_siz//2)
 
-freqmag = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),
+freqmag_test = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),
                                        [0],[sig]))
-freqmag[N//2] = 0
+freqmag_test[N//2] = 0
+freqmag = np.zeros(N)
+for i in range(out_siz//2):
+    freqmag[i]=0.05
+    freqmag[-i]=0.05
+
 print(freqmag[0:out_siz//2])
 #=========================================================
 #----- Parameters Setup
@@ -112,6 +117,7 @@ L2_loss_train = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
 Sqr_loss_train_K = tf.reduce_mean(tf.squeeze(tf.squared_difference(
         trainOutData, y_train_output)),0)
 
+
 y_norm_train = tf.reduce_mean(trainNorm)
 
 L2_loss_test = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
@@ -122,6 +128,8 @@ L2_loss_test_list = tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
 
 Sqr_loss_test_K = tf.reduce_mean(tf.squeeze(
         tf.squared_difference(testOutData, y_test_output)),0)
+
+Sqr_test_norm_K = tf.reduce_mean(tf.squeeze(tf.square(testOutData)),0)
 
 train_step = optimizer_adam.minimize(MSE_loss_train,global_step=global_steps)
 
@@ -137,7 +145,7 @@ S=2
 K_list = np.zeros((S,out_siz,max_iter//record_freq)) 
 err_list = np.zeros((S,max_iter//record_freq))
 epochs = np.linspace(0,max_iter,max_iter//record_freq)
-
+test_loss_klist = np.zeros((S,out_siz//2))
 for s in range(S):
     sess.run(init)
     
@@ -157,20 +165,22 @@ for s in range(S):
     x_test,y_test,y_norm = gen_uni_data(freqmag,freqidx,test_batch_siz,sig)
     test_dict = {testInData: x_test, testOutData: y_test,
                       testNorm: y_norm}
-    [test_loss, test_loss_list, test_loss_k] = sess.run(
-        [L2_loss_test, L2_loss_test_list, Sqr_loss_test_K],feed_dict=test_dict)
+    [test_loss, test_loss_list, test_loss_k,K_norm] = sess.run(
+        [L2_loss_test, L2_loss_test_list, Sqr_loss_test_K,Sqr_test_norm_K],
+        feed_dict=test_dict)
     print("Test Loss: %10e." % (test_loss))
 
-
-
     for i in range(8):
-        K_list[s,i,:] = np.sqrt(K_list[s,2*i,:] + K_list[s,2*i+1,:])
-        test_loss_k[i] = np.sqrt(test_loss_k[2*i] + test_loss_k[2*i+1])
-    
-    print(test_loss_k[0:out_siz//2])
+        K_norm[i] = np.sqrt(K_norm[2*i] + K_norm[2*i+1])
+        K_list[s,i,:] = np.sqrt(K_list[s,2*i,:] + K_list[s,2*i+1,:])\
+                        /K_norm[i]
+        test_loss_klist[s,i] = np.sqrt(test_loss_k[2*i] + test_loss_k[2*i+1])\
+                                /K_norm[i]
 
 err_list = np.log10(err_list)
 K_list = np.log10(K_list)
+print(test_loss_klist)
+print(K_norm[0:out_siz//2])
 
 for k in range(out_siz//2):
     fig = plt.figure(k,figsize=(10,8))
