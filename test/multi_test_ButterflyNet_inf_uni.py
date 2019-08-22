@@ -27,16 +27,16 @@ out_siz = paras['outputSize']
 in_range = np.float32([0,1])
 out_range = np.float32([0,out_siz//2])
 sig = paras['sigma']
-freqidx = range(out_siz//2)
-freqmag_test = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),
-                                       [0],[sig]))
-freqmag_test[N//2] = 0
-freqmag = np.zeros(N)
-for i in range(out_siz//2):
-    freqmag[i]=0.05
-    freqmag[-i]=0.05
-freqmag[N//2] = 0
 
+freqidx = range(out_siz//2)
+freqmag = np.zeros((5*out_siz//2-3,N))
+for i in range(5*out_siz//2-4):
+    freqmag[i] = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),
+                                       [-i/5],[sig]))
+    freqmag[i,N//2] = 0
+for i in range(out_siz//2):  
+    freqmag[5*out_siz//2-4,i]=0.05
+    freqmag[5*out_siz//2-4,-i]=0.05
 #=========================================================
 #----- Parameters Setup
 
@@ -143,13 +143,14 @@ print("Total Num Paras:  %6d" % ( np.sum( [np.prod(v.get_shape().as_list())
 S=2
 K_list = np.zeros((S,out_siz,max_iter//record_freq)) 
 err_list = np.zeros((S,max_iter//record_freq))
+mk_test_loss_list = np.zeros((5*out_siz//2-3,S))
 epochs = np.linspace(0,max_iter,max_iter//record_freq)
 test_loss_klist = np.zeros((S,out_siz//2))
 for s in range(S):
     sess.run(init)
     
     for it in range(max_iter):
-        x_train,y_train,y_norm = gen_uni_data(freqmag,freqidx,batch_siz,sig)
+        x_train,y_train,y_norm = gen_uni_data(freqmag[-1],freqidx,batch_siz,sig)
         train_dict = {trainInData: x_train, trainOutData: y_train,
                   trainNorm: y_norm}
         if it % report_freq == 0:
@@ -160,34 +161,33 @@ for s in range(S):
             err_list[s,it//record_freq] = temp_train_loss
             K_list[s,:,it//record_freq] = K_loss
         sess.run(train_step, feed_dict=train_dict)
-
-    x_test,y_test,y_norm = gen_uni_data(freqmag,freqidx,test_batch_siz,sig)
-    test_dict = {testInData: x_test, testOutData: y_test,
+    for j in range(5*out_siz//2-3):
+        x_test,y_test,y_norm = gen_uni_data(freqmag[j],freqidx,test_batch_siz,sig)
+        test_dict = {testInData: x_test, testOutData: y_test,
                       testNorm: y_norm}
-    [test_loss, test_loss_list, test_loss_k,K_norm] = sess.run(
-        [L2_loss_test, L2_loss_test_list, Sqr_loss_test_K,Sqr_test_norm_K],
-        feed_dict=test_dict)
-    print("Test Loss: %10e." % (test_loss))
+        [test_loss, test_loss_list, test_loss_k,K_norm] = sess.run(
+                [L2_loss_test, L2_loss_test_list, Sqr_loss_test_K,Sqr_test_norm_K],
+                feed_dict=test_dict)
+        mk_test_loss_list[j,s] = test_loss
+    #print("Test Loss: %10e." % (test_loss))
 
-    for i in range(out_siz//2):
-        K_norm[i] = np.sqrt(K_norm[2*i] + K_norm[2*i+1])
-        K_list[s,i,:] = np.sqrt(K_list[s,2*i,:] + K_list[s,2*i+1,:])\
-                        /K_norm[i]
-        test_loss_klist[s,i] = np.sqrt(test_loss_k[2*i] + test_loss_k[2*i+1])\
-                                /K_norm[i]
-    
-    print(test_loss_k[0:out_siz//2])
+    #for i in range(8):
+    #    K_norm[i] = np.sqrt(K_norm[2*i] + K_norm[2*i+1])
+    #    K_list[s,i,:] = np.sqrt(K_list[s,2*i,:] + K_list[s,2*i+1,:])\
+    #                   /K_norm[i]
+    #    test_loss_klist[s,i] = np.sqrt(test_loss_k[2*i] + test_loss_k[2*i+1])\
+    #                           /K_norm[i]
 
-err_list = np.log10(err_list)
-K_list = np.log10(K_list)
-print(test_loss_klist)
-print(K_norm[0:out_siz//2])
-
-for k in range(out_siz//2):
-    fig = plt.figure(k,figsize=(10,8))
-    for s in range(S):
-        plt.plot(epochs, K_list[s,k], 'r', label = 'k = '+ str(k)+')')
-    plt.title('FFT_Training Error Plot(k='+ str(k)+')')
-    plt.savefig("FFT_Train_Error_"+ str(prefixed)+"_"+str(k)+".png" )
-
+#err_list = np.log10(err_list)
+#K_list = np.log10(K_list)
+mk_test_loss_list = np.mean(np.log10(mk_test_loss_list),axis = 1)
+#print(test_loss_klist)
+#print(K_norm[0:out_siz//2])
+print(mk_test_loss_list)
+#for k in range(out_siz//2):
+#    fig = plt.figure(k,figsize=(10,8))
+#    for s in range(S):
+#        plt.plot(epochs, K_list[s,k], 'r', label = 'k = '+ str(k)+')')
+#    plt.title('CNN_Training Error Plot(k='+ str(k)+')')
+#    plt.savefig("CNN_Train_Error_"+ str(prefixed)+"_"+str(k)+".png" )
 sess.close()
