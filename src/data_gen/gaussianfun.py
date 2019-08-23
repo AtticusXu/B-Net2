@@ -9,7 +9,7 @@ def gaussianfun(x, mulist, siglist):
         gx   = gx + np.exp(-np.power(x-mu,2.)/(2*sig2)) \
                / np.sqrt(2*np.pi*sig2) / len_list
     for k in range(len(x)//2):
-        gx[k] = gx[-k-1]
+        gx[k] = gx[-k]
         
     return gx
 
