@@ -28,34 +28,36 @@ energy_calc_siz = paras['energyCalcSize']
 #=========================================================
 #----- Parameters Setup
 
+nlvl = paras['nlvl']# Num of levels of the BF struct
+klvl = paras['klvl']
+alph = paras['alpha']
 prefixed = paras['prefixed']
 
-#----- Tunable Parameters of BNet
-batch_siz = paras['batchSize'] # Batch size during traning
 channel_siz = paras['channelSize'] # Num of interp pts on each dim
 
+batch_siz = paras['batchSize'] # Batch size during traning
+
 adam_learning_rate = paras['ADAMparas']['learningRate']
+adam_learning_rate_decay = paras['ADAMparas']['learningRatedecay']
 adam_beta1 = paras['ADAMparas']['beta1']
 adam_beta2 = paras['ADAMparas']['beta2']
 
 max_iter = paras['maxIter'] # Maximum num of iterations
+test_batch_siz = paras['Ntest']
 report_freq = paras['reportFreq'] # Frequency of reporting
-
-#----- Self-adjusted Parameters of BNet
-# Num of levels of the BF struct, must be a even num
-nlvl = 2*math.floor(math.log(min(in_siz,out_siz//2),2)/2)
-# Filter size for the input and output
-in_filter_siz = in_siz//2**nlvl
-out_filter_siz = out_siz//2**nlvl
+record_freq = paras['recordFreq'] # Frequency of recording
 
 print("======== Parameters =========")
 print("Batch Size:       %6d" % (batch_siz))
 print("Channel Size:     %6d" % (channel_siz))
-print("ADAM LR:          %6.4f" % (adam_learning_rate))
+print("Alpha:            %6d" % (alph))
+print("ADAM LR:          %10e" % (adam_learning_rate))
+print("ADAM LR decay:    %6.4f" % (adam_learning_rate_decay))
 print("ADAM Beta1:       %6.4f" % (adam_beta1))
 print("ADAM Beta2:       %6.4f" % (adam_beta2))
 print("Max Iter:         %6d" % (max_iter))
 print("Num Levels:       %6d" % (nlvl))
+print("K Levels:         %6d" % (klvl))
 print("Prefix Coef:      %6r" % (prefixed))
 print("In Range:        (%6.2f, %6.2f)" % (in_range[0], in_range[1]))
 print("Out Range:       (%6.2f, %6.2f)" % (out_range[0], out_range[1]))
@@ -75,15 +77,14 @@ testOutData = tf.placeholder(tf.float32, shape=(1,1,1),
 
 #=========================================================
 #----- Training Preparation
-cnn_net = CNNLayer(in_siz, out_siz,
-        in_filter_siz, out_filter_siz,
+cnn_net = CNNLayer(in_siz, out_siz, False, klvl, alph,
         channel_siz, nlvl, prefixed)
 
 optimizer_adam = tf.train.AdamOptimizer(adam_learning_rate,
         adam_beta1, adam_beta2)
 
 if energy_calc_siz == 'sqr':
-    denseVec = tf.Variable(tf.random_normal([out_siz]))
+    denseVec = tf.Variable(tf.random_normal([out_siz],stddev=0.00001))
     tmpVar = tf.multiply(
             tf.reshape(cnn_net(trainInData),[-1,out_siz]),
             denseVec)
