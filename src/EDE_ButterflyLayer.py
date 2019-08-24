@@ -224,8 +224,7 @@ class ETEButterflyLayer(tf.keras.layers.Layer):
             self.FeaDenseVars.append(denseVar)
 
         # Mid Layer
-        self.mid_DenseVar
-        filterVar = tf.Variable(tf.random_normal([1,self.mid_siz,2],0,std))
+        self.mid_DenseVar = tf.Variable(tf.random_normal([1,self.mid_siz,2],0,std))
         
         
         # Setup de_preparation layer weights
@@ -295,7 +294,7 @@ class ETEButterflyLayer(tf.keras.layers.Layer):
         LMat = LagrangeMat(ChebNodes,xNodes)
 
         #----------------
-        # Setup preparation layer weights
+        # Setup en_preparation layer weights
         mat = np.empty((self.in_filter_siz,1,self.channel_siz))
         kcen = np.mean(self.out_range)
         xlen = (self.in_range[1] - self.in_range[0])/2**self.nlvl
@@ -307,13 +306,13 @@ class ETEButterflyLayer(tf.keras.layers.Layer):
             mat[:,0,4*it+2] = -np.multiply(KVal.real,LVec)
             mat[:,0,4*it+3] = -np.multiply(KVal.imag,LVec)
 
-        self.InFilterVar = tf.Variable( mat.astype(np.float32),
+        self.en_InFilterVar = tf.Variable( mat.astype(np.float32),
                 name="Filter_In" )
-        self.InBiasVar = tf.Variable( tf.zeros([self.channel_siz]),
+        self.en_InBiasVar = tf.Variable( tf.zeros([self.channel_siz]),
                 name="Bias_In" )
 
         #----------------
-        # Setup ell layer weights
+        # Setup en_ell layer weights
         ChebNodes = (np.cos(np.array(range(2*NG-1,0,-2))/2/NG*math.pi) +
                 1)/2
         x1Nodes = ChebNodes/2
@@ -321,15 +320,15 @@ class ETEButterflyLayer(tf.keras.layers.Layer):
         LMat1 = LagrangeMat(ChebNodes,x1Nodes)
         LMat2 = LagrangeMat(ChebNodes,x2Nodes)
 
-        self.FilterVars = []
-        self.BiasVars = []
-        self.FilterVars.append(list([]))
-        self.BiasVars.append(list([]))
+        self.en_FilterVars = []
+        self.en_BiasVars = []
+        self.en_FilterVars.append(list([]))
+        self.en_BiasVars.append(list([]))
         for lvl in range(1,self.klvl+1):
             tmpFilterVars = []
             tmpBiasVars = []
             for itk in range(0,2**lvl):
-                varLabel = "LVL_%02d_%04d" % (lvl, itk)
+                varLabel = "en_LVL_%02d_%04d" % (lvl, itk)
 
                 mat = np.empty((2, self.channel_siz, self.channel_siz))
                 kcen = (self.out_range[1] \
@@ -386,15 +385,15 @@ class ETEButterflyLayer(tf.keras.layers.Layer):
                         name="Bias_"+varLabel )
                 tmpFilterVars.append(filterVar)
                 tmpBiasVars.append(biasVar)
-            self.FilterVars.append(list(tmpFilterVars))
-            self.BiasVars.append(list(tmpBiasVars))
+            self.en_FilterVars.append(list(tmpFilterVars))
+            self.en_BiasVars.append(list(tmpBiasVars))
             
         
         for lvl in range(self.klvl+1,self.nlvl+1):
             tmpFilterVars = []
             tmpBiasVars = []
             for itk in range(0,2**self.klvl):
-                varLabel = "LVL_%02d_%04d" % (lvl, itk*(2**(lvl-self.klvl)))
+                varLabel = "en_LVL_%02d_%04d" % (lvl, itk*(2**(lvl-self.klvl)))
 
                 mat = np.empty((2, self.channel_siz, self.channel_siz))
                 kcen = (self.out_range[1] \
@@ -451,16 +450,16 @@ class ETEButterflyLayer(tf.keras.layers.Layer):
                         name="Bias_"+varLabel )
                 tmpFilterVars.append(filterVar)
                 tmpBiasVars.append(biasVar)
-            self.FilterVars.append(list(tmpFilterVars))
-            self.BiasVars.append(list(tmpBiasVars))
+            self.en_FilterVars.append(list(tmpFilterVars))
+            self.en_BiasVars.append(list(tmpBiasVars))
             
 
         #----------------
-        # Setup feature layer weights 
-        self.FeaDenseVars = []
+        # Setup en_feature layer weights 
+        self.en_FeaDenseVars = []
         
         for itk in range(0,2**self.klvl):
-            varLabel = "Filter_Out_%04d" % (itk)
+            varLabel = "en_Filter_Out_%04d" % (itk)
             mat = np.empty((self.channel_siz, self.out_filter_siz))
             kNodes = np.arange(0,1,2.0/self.out_filter_siz)
             klen = (self.out_range[1] - self.out_range[0])/2**self.nlvl
@@ -486,4 +485,8 @@ class ETEButterflyLayer(tf.keras.layers.Layer):
             denseVar = tf.Variable( mat.astype(np.float32),
                         name=varLabel )
 
-            self.FeaDenseVars.append(denseVar)
+            self.en_FeaDenseVars.append(denseVar)
+            
+        # Setup en_feature layer weights 
+        
+        self.mid_DenseVar = tf.Variable(tf.random_normal([1,self.mid_siz,2],0,std))
