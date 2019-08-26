@@ -63,8 +63,8 @@ def gen_ede_uni_data(freqmag,freqidx,siz,sig):
     xdata = np.float32(xdata)
     x_data = np.float32(x_data)
     ydata = np.float32(ydata)
-    ynorm =np.squeeze(np.linalg.norm(ydata,2,1))
-    return xdata,ydata,ynorm,x_data
+    fnorm =np.squeeze(np.linalg.norm(xdata,2,1))
+    return xdata,ydata,fnorm,x_data
 
     
 def gen_2D_straight_data(siz_x,siz_y,siz_u,siz_v, N):
