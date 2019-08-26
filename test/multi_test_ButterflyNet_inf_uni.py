@@ -138,8 +138,10 @@ def train():
             train_dict = {trainInData: x_train, trainOutData: y_train,
                           trainNorm: y_norm}
             if it % report_freq == 0:
-                temp_train_loss = sess.run(L2_loss_train, feed_dict=train_dict)
-                print("Iter # %6d: Train Loss: %10e." % (it,temp_train_loss))
+                [temp_train_loss,y_norm] = sess.run(
+                       [L2_loss_train,y_norm_train], feed_dict=train_dict)
+                print("Iter # %6d: Train Loss: %10e.%10e" % (it,
+                      temp_train_loss,y_norm))
             if it % record_freq == 0:
                 K_loss = sess.run(Sqr_loss_train_K,feed_dict=train_dict)
                 err_list[s,it//record_freq] = temp_train_loss
