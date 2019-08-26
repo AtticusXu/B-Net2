@@ -105,7 +105,7 @@ def evaluate():
     
     sess = tf.Session()
     saver = tf.train.Saver()
-    S=2
+    S=20
     mk_test_loss_list = np.zeros((5*out_siz//2-3,S))
     epochs = np.linspace(0,max_iter,max_iter//record_freq)
     mk_test_loss_klist = np.zeros((S,5*out_siz//2-3,out_siz//2))
@@ -139,9 +139,9 @@ def evaluate():
         #print(test_loss_klist)
         #print(K_norm[0:out_siz//2])
     print(mk_test_loss_list)
-    np.save('train_model/fft_mk_test_loss_list_'+str(prefixed)+"_"+str(s), 
+    np.save('train_model/fft_mk_test_loss_list_'+str(prefixed), 
             mk_test_loss_list)
-    np.save('train_model/fft_mk_test_loss_klist_'+str(prefixed)+"_"+str(s), 
+    np.save('train_model/fft_mk_test_loss_klist_'+str(prefixed), 
             mk_test_loss_klist)
     #for k in range(out_siz//2):
     #    fig = plt.figure(k,figsize=(10,8))
