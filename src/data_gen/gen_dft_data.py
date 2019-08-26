@@ -23,12 +23,14 @@ def gen_uni_data(freqmag,freqidx,siz,sig):
     imagy = imagy*freqmag
     y = realy + imagy*1j
     xdata = np.reshape(np.fft.ifft(y,N,1).real,(siz,N,1),order='F')
-    realy = np.reshape(realy[:,freqidx],(siz,1,-1),order='F')
-    imagy = np.reshape(imagy[:,freqidx],(siz,1,-1),order='F')
+    y = np.reshape(np.fft.fft(xdata,N,1),(siz,1,N),order='F')
+    realy = y.real[:,:,freqidx]
+    imagy = y.imag[:,:,freqidx]
     ydata = np.reshape(np.concatenate((realy,imagy),axis=1),(siz,-1,1),order='F')
+    ynorm = np.squeeze(np.linalg.norm(ydata,2,1))
     xdata = np.float32(xdata)
     ydata = np.float32(ydata)
-    ynorm =np.squeeze(np.linalg.norm(ydata,2,1))
+    
     return xdata,ydata,ynorm
 
 def gen_ede_uni_data(freqmag,freqidx,siz,sig):
