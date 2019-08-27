@@ -15,33 +15,35 @@ import json
 tf.reset_default_graph() 
 from gaussianfun import gaussianfun
 from gen_dft_data import gen_ede_uni_data
-from ETE_ButterflyLayer import ETEButterflyLayer
+from ButterflyLayer import ButterflyLayer
+from Inv_ButterflyLayer import InvButterflyLayer
 
 json_file = open('paras.json')
 paras = json.load(json_file)
 
-N = paras['inputSize']
-
+N = 128
 in_siz = 128
-out_siz = 128
+mid_siz = 256
+out_siz = mid_siz
 in_range = np.float32([0,1])
-out_range = np.float32([0,128])
+mid_range = np.float32([0,mid_siz//2])
+out_range = np.float32([0,out_siz//2])
 sig = paras['sigma']
-freqidx = range(out_siz//2)
+freqidx = range(mid_siz//2)
 freqmag = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),
-                                       [0,0,0,0],[sig,sig,sig,sig]))
+                                       [1],[0.1]))
 freqmag[N//2] = 0
 
 #=========================================================
 #----- Parameters Setup
 
-prefixed = paras['prefixed']
+prefixed = True
 
-channel_siz = paras['channelSize'] # Num of interp pts on each dim
+channel_siz = 32 # Num of interp pts on each dim
 
 
 batch_siz = paras['batchSize'] # Batch size during traning
-channel_siz = paras['channelSize'] # Num of interp pts on each dim
+
 
 adam_learning_rate = paras['ADAMparas']['learningRate']
 adam_learning_rate_decay = paras['ADAMparas']['learningRatedecay']
@@ -54,7 +56,7 @@ report_freq = paras['reportFreq'] # Frequency of reporting
 record_freq = paras['recordFreq'] # Frequency of recording
 #----- Self-adjusted Parameters of BNet
 # Num of levels of the BF struct, must be a even num
-nlvl = paras['nlvl']
+nlvl = 6
 
 print("======== Parameters =========")
 print("Batch Size:       %6d" % (batch_siz))
@@ -76,55 +78,48 @@ sess = tf.Session()
 
 trainInData = tf.placeholder(tf.float32, shape=(batch_siz,in_siz,1),
         name="trainInData")
-trainOutData = tf.placeholder(tf.float32, shape=(batch_siz,out_siz),
-        name="trainOutData")
-trainNorm = tf.placeholder(tf.float32, shape=(batch_siz),
-        name="trainNorm")
-testInData = tf.placeholder(tf.float32, shape=(test_batch_siz,in_siz,1),
+trainMidData = tf.placeholder(tf.float32, shape=(batch_siz,mid_siz,1),
         name="trainInData")
-testOutData = tf.placeholder(tf.float32, shape=(test_batch_siz,out_siz),
+trainOutData = tf.placeholder(tf.float32, shape=(batch_siz,out_siz//2,1),
         name="trainOutData")
-testNorm = tf.placeholder(tf.float32, shape=(test_batch_siz),
-        name="testNorm")
+trainInNorm = tf.placeholder(tf.float32, shape=(batch_siz),
+        name="trainNorm")
+trainMidNorm = tf.placeholder(tf.float32, shape=(batch_siz),
+        name="trainNorm")
+
 global_steps=tf.Variable(0, trainable=False)
 #=========================================================
 #----- Training Preparation
-ETEbutterfly_net = ETEButterflyLayer(in_siz=128, mid_siz=128, out_siz=128,
-            channel_siz = 8, nlvl = 5, prefixed = False,
-            in_range = [0,1], mid_range = [0,128], out_range = [0,1])
+butterfly_net = ButterflyLayer(in_siz, mid_siz, False,
+        channel_siz, nlvl, prefixed,
+        in_range, out_range)
 
+inv_butterfly_net = InvButterflyLayer(mid_siz//2, out_siz,
+            channel_siz , nlvl , prefixed ,
+             out_range, in_range)
 learning_rate = tf.train.exponential_decay(adam_learning_rate,
                                            global_steps,100,
                                            adam_learning_rate_decay)
 optimizer_adam = tf.train.AdamOptimizer(learning_rate,
         adam_beta1, adam_beta2)
 
-y_train_output = ETEbutterfly_net(trainInData)
-y_test_output = ETEbutterfly_net(testInData)
+y_train_output = butterfly_net(trainInData)
 
-MSE_loss_train = tf.reduce_mean(
-        tf.squared_difference(trainOutData, y_train_output))
+[f_train_output,mid] = inv_butterfly_net(trainMidData)
 
-L2_loss_train = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
-        tf.squared_difference(trainOutData, y_train_output)),1)),trainNorm))
+MSE_loss_train_y = tf.reduce_mean(
+        tf.squared_difference(trainMidData, y_train_output))
 
+L2_loss_train_y = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
+        tf.squared_difference(trainMidData, y_train_output)),1)),trainMidNorm))
 
-Sqr_loss_train_K = tf.reduce_mean(tf.squeeze(tf.squared_difference(
-        trainOutData, y_train_output)),0)
+MSE_loss_train_f = tf.reduce_mean(
+        tf.squared_difference(trainOutData, f_train_output))
 
-y_norm_train = tf.reduce_mean(trainNorm)
+L2_loss_train_f = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
+        tf.squared_difference(trainOutData, f_train_output)),1)),trainInNorm))
 
-L2_loss_test = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
-        tf.squared_difference(testOutData, y_test_output)),1)),testNorm))
-
-L2_loss_test_list = tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
-        tf.squared_difference(testOutData, y_test_output)),1)),testNorm)
-
-Sqr_loss_test_K = tf.reduce_mean(tf.squeeze(
-        tf.squared_difference(testOutData, y_test_output)),0)
-
-
-train_step = optimizer_adam.minimize(MSE_loss_train,global_step=global_steps)
+#train_step = optimizer_adam.minimize(MSE_loss_train_f,global_step=global_steps)
 
 # Initialize Variables
 init = tf.global_variables_initializer()
@@ -136,25 +131,13 @@ print("Total Num Paras:  %6d" % ( np.sum( [np.prod(v.get_shape().as_list())
 #----- Step by Step Training
 
 sess.run(init)
-K_list = np.zeros((out_siz,max_iter//record_freq)) 
-err_list = np.zeros(max_iter//record_freq) 
-epochs = np.linspace(0,max_iter,max_iter//record_freq)
-for it in range(max_iter):
-    x_train,y_train,y_norm,f_train = gen_ede_uni_data(freqmag,freqidx,batch_siz,sig)
-    train_dict = {trainInData: x_train, trainOutData: f_train,
-                  trainNorm: y_norm}
-    if it % report_freq == 0:
-        temp_train_loss = sess.run(L2_loss_train, feed_dict=train_dict)
-        print("Iter # %6d: Train Loss: %10e." % (it,temp_train_loss))
-    if it % record_freq == 0:
-        K_loss = sess.run(Sqr_loss_train_K,feed_dict=train_dict)
-        err_list[it//record_freq] = temp_train_loss
-        K_list[:,it//record_freq] = K_loss
-    sess.run(train_step, feed_dict=train_dict)
 
-x_test,y_test,y_norm,f_test = gen_ede_uni_data(freqmag,freqidx,test_batch_siz,sig)
-test_dict = {testInData: x_test, testOutData: f_test,
-                  testNorm: y_norm}
-[test_loss, test_loss_list, test_loss_k] = sess.run(
-        [L2_loss_test, L2_loss_test_list, Sqr_loss_test_K],feed_dict=test_dict)
-print("Test Loss: %10e." % (test_loss))
+x_train,y_train,x_norm,y_norm = gen_ede_uni_data(freqmag,freqidx,batch_siz,sig)
+train_dict = {trainInData: x_train,trainMidData: y_train, trainOutData: x_train,
+                  trainInNorm: x_norm,trainMidNorm: y_norm}
+[f_train,y_loss,f_loss,m] = sess.run([f_train_output,L2_loss_train_y,L2_loss_train_f,mid], feed_dict=train_dict)
+print("yLoss: %10e. fLoss:%10e." % (y_loss,f_loss))
+print(m[0])
+plt.plot(np.linspace(0,128,128),f_train[0,:,0]-x_train[0,:,0],'r')
+plt.plot(np.linspace(0,128,128),x_train[0,:,0],'b')
+plt.plot(np.linspace(0,128,128),m[0]/128,'g')
