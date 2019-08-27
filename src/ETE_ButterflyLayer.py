@@ -17,8 +17,8 @@ class ETEButterflyLayer(tf.keras.layers.Layer):
         #TODO: set the default values based on in_siz and out_siz
         self.channel_siz    = channel_siz
         self.nlvl           = nlvl
-        self.en_klvl        = min(np.floor(np.log2(mid_siz)).astype('int'), nlvl)
-        self.de_klvl        = min(np.floor(np.log2(out_siz)).astype('int'), nlvl)
+        self.en_klvl        = min(np.floor(np.log2(mid_siz/2)).astype('int'), nlvl)
+        self.de_klvl        = min(np.floor(np.log2(out_siz)).astype('int'),nlvl)
         self.in_filter_siz  = in_siz // 2**nlvl
         self.mid_filter_siz = mid_siz // 2**self.en_klvl
         self.out_filter_siz = out_siz // 2**self.de_klvl
@@ -75,28 +75,30 @@ class ETEButterflyLayer(tf.keras.layers.Layer):
 
         # en_Feature Layer
         OutInterp = np.reshape([], (np.size(in_data,0), 0,
-                2*self.mid_filter_siz))
+                self.mid_filter_siz))
         
         for itk in range(0,2**self.en_klvl):
             tmpVar = en_tfVars[self.nlvl][itk][:,0,:]
             tmpVar = tf.matmul(tmpVar,self.en_FeaDenseVars[itk])
             tmpVar = tf.reshape(tmpVar,
-                    (np.size(in_data,0),1,2*self.mid_filter_siz))
+                    (np.size(in_data,0),1,self.mid_filter_siz))
             OutInterp = tf.concat([OutInterp, tmpVar], axis=1)
+        y_data = tf.reshape(OutInterp,shape=(np.size(in_data,0),
+            self.mid_siz,1))
         en_mid_data = tf.reshape(OutInterp,shape=(np.size(in_data,0),
-            self.mid_siz,2))
+            self.mid_siz//2,2))
         
         # Mid Layer
         
         de_mid_data = tf.multiply(en_mid_data,self.mid_DenseVar)
         de_mid_data = tf.reshape(de_mid_data,(np.size(in_data,0),
-            self.mid_siz,2,1))
+            self.mid_siz//2,2,1))
         
         # de_Preparation Layer
         de_InInterp = []
         for i in range(2):
             de_InInterp_ir = tf.nn.conv1d(de_mid_data[:,:,i], self.de_InFilterVar,
-                stride=self.mid_filter_siz, padding='VALID')
+                stride=self.mid_filter_siz//2, padding='VALID')
             de_InInterp_ir = tf.nn.relu(tf.nn.bias_add(de_InInterp_ir,
                                                   self.de_InBiasVar))
             de_InInterp.append(de_InInterp_ir)
@@ -128,7 +130,7 @@ class ETEButterflyLayer(tf.keras.layers.Layer):
             for itk in range(0,2**self.de_klvl):
                 Var = []
                 for i in range(2):
-                    Var_ir = tf.nn.conv1d(en_tfVars[lvl-1][itk][i],
+                    Var_ir = tf.nn.conv1d(de_tfVars[lvl-1][itk][i],
                                        self.de_FilterVars[lvl][itk],
                                        stride=2, padding='VALID')
                     Var_ir = tf.nn.relu(tf.nn.bias_add(Var,
@@ -221,19 +223,19 @@ class ETEButterflyLayer(tf.keras.layers.Layer):
             varLabel = "Filter_en_Out_%04d" % (itk)
             denseVar = tf.Variable(
                     tf.random_normal([self.channel_siz,
-                       2*self.mid_filter_siz],0,std),name=varLabel)
+                       self.mid_filter_siz],0,std),name=varLabel)
 
             self.en_FeaDenseVars.append(denseVar)
 
         # Mid Layer
         self.mid_DenseVar = tf.Variable(tf.random_normal(
-                [1,self.mid_siz,2],0,std),name = "Dense_mid")
+                [1,self.mid_siz//2,2],0,std),name = "Dense_mid")
         
         
         # Setup de_preparation layer weights
         
         self.de_InFilterVar = tf.Variable( tf.random_normal(
-        [self.mid_filter_siz, 1, self.channel_siz],0,std), name="Filter_de_In")
+        [self.mid_filter_siz//2, 1, self.channel_siz],0,std), name="Filter_de_In")
         self.de_InBiasVar = tf.Variable( tf.zeros([self.channel_siz]),
                                          name="Bias_de_In" )
             
@@ -464,7 +466,7 @@ class ETEButterflyLayer(tf.keras.layers.Layer):
         for itk in range(0,2**self.klvl):
             varLabel = "en_Filter_Out_%04d" % (itk)
             mat = np.empty((self.channel_siz, self.mid_filter_siz))
-            kNodes = np.arange(0,1,1.0/self.mid_filter_siz)
+            kNodes = np.arange(0,1,2.0/self.mid_filter_siz)
             klen = (self.out_range[1] - self.mid_range[0])/2**self.nlvl
             koff = klen*itk*(2**(self.nlvl-self.klvl)) + self.mid_range[0]
             kNodes = kNodes*klen + koff
@@ -491,10 +493,7 @@ class ETEButterflyLayer(tf.keras.layers.Layer):
             self.en_FeaDenseVars.append(denseVar)
             
         # Setup en_feature layer weights 
-        mat = np.zeros((1,self.mid_siz,2))
-        for i in range(self.mid_siz//2):
-            mat[0][2*i][0] = 1
-            mat[0][2*i+1][1] = 1
+        mat = np.ones((1,self.mid_siz//2,2))
         self.mid_DenseVar = tf.Variable(mat.astype(np.float32),
                                         name = "Dense_mid")
         
