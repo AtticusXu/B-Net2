@@ -15,8 +15,8 @@ class InvButterflyLayer(tf.keras.layers.Layer):
         self.out_siz        = out_siz
         #TODO: set the default values based on in_siz and out_siz
         self.channel_siz    = channel_siz
-        self.nlvl           = nlvl
-        self.klvl           = min(np.floor(np.log2(out_siz/2)).astype('int'),nlvl)
+        self.nlvl           = min(np.floor(np.log2(mid_siz/2)).astype('int'),nlvl)
+        self.klvl           = self.nlvl
         self.mid_filter_siz = mid_siz // 2**self.nlvl
         self.out_filter_siz = out_siz // 2**self.klvl
         self.mid_range      = mid_range
@@ -46,7 +46,7 @@ class InvButterflyLayer(tf.keras.layers.Layer):
         de_InInterp = []
         for i in range(2):
             de_InInterp_ir = tf.nn.conv1d(de_mid_data[:,:,i], self.de_InFilterVar,
-                stride=self.mid_filter_siz//2, padding='VALID')
+                stride=self.mid_filter_siz, padding='VALID')
             de_InInterp_ir = tf.nn.relu(tf.nn.bias_add(de_InInterp_ir,
                                                   self.de_InBiasVar))
             de_InInterp.append(de_InInterp_ir)
@@ -114,7 +114,7 @@ class InvButterflyLayer(tf.keras.layers.Layer):
         #out_data_i = tf.add(OutInterp_r[:,:,1],OutInterp_i[:,:,0])
         out_data = tf.reshape(out_data_r,shape=(np.size(in_data,0),
             self.out_siz//2,1))
-        return(out_data,OutInterp_r[:,:,1])
+        return(out_data)
 
     #==================================================================
     # Initialize variables in the layer
