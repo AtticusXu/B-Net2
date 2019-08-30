@@ -167,10 +167,10 @@ for it in range(max_iter):
     result = sess.run(merged,feed_dict=train_dict)
     writer.add_summary(result, it)
     if it % report_freq == 0:
-        [temp_train_loss,A_temp_train_loss] = sess.run(
-                [L2_loss_train,A_L2_loss_train], feed_dict=train_dict)
-        print("Iter # %6d: Train Loss: %10e.A_Train Loss: %10e." 
-              % (it,temp_train_loss,A_temp_train_loss))
+        [temp_train_loss,A_temp_train_loss,A_MSE] = sess.run(
+                [L2_loss_train,A_L2_loss_train,A_MSE_loss_train], feed_dict=train_dict)
+        print("Iter # %6d: Train Loss: %10e.A_Train Loss: %10e.A_MSE Loss: %10e." 
+              % (it,temp_train_loss,A_temp_train_loss,A_MSE))
     if it % record_freq == 0:
         K_loss = sess.run(Sqr_loss_train_K,feed_dict=train_dict)
         err_list[it//record_freq] = temp_train_loss
