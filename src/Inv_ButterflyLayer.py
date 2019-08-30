@@ -36,8 +36,20 @@ class InvButterflyLayer(tf.keras.layers.Layer):
         
         
         # Mid Layer
+        pre_siz = np.size(in_data,1)//2
         en_mid_data = tf.reshape(in_data,(np.size(in_data,0),
-            self.mid_siz,2))
+            pre_siz,2))
+        en_mid_data_r = en_mid_data[:,:,0]
+        en_mid_data_i = en_mid_data[:,:,1]
+        en_mid_data_r = tf.reshape(tf.concat([en_mid_data_r[:,0:self.mid_siz//2],
+                                              np.zeros((np.size(in_data,0),1)),
+                                 en_mid_data_r[:,self.mid_siz//2-1:0:-1]],1),
+                                    (np.size(in_data,0),self.mid_siz,1))
+        en_mid_data_i = tf.reshape(tf.concat([en_mid_data_i[:,0:self.mid_siz//2],
+                                              np.zeros((np.size(in_data,0),1)),
+                                 -en_mid_data_i[:,self.mid_siz//2-1:0:-1]],1),
+                                    (np.size(in_data,0),self.mid_siz,1))
+        en_mid_data = tf.concat([en_mid_data_r, en_mid_data_i],2)
         de_mid_data = tf.multiply(en_mid_data,self.mid_DenseVar)
         de_mid_data = tf.reshape(de_mid_data,(np.size(in_data,0),
             self.mid_siz,2,1))

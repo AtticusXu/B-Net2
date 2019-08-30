@@ -21,17 +21,19 @@ from Inv_ButterflyLayer import InvButterflyLayer
 json_file = open('paras.json')
 paras = json.load(json_file)
 
-N = 128
-in_siz = 128
-mid_siz = 256
-out_siz = 256
+N = 32
+in_siz = 32
+en_mid_siz = 32
+de_mid_siz = min(in_siz,en_mid_siz)
+out_siz = 64
 in_range = np.float32([0,1])
-mid_range = np.float32([0,mid_siz//2])
+en_mid_range = np.float32([0,en_mid_siz//2])
+de_mid_range = np.float32([0,de_mid_siz])
 out_range = np.float32([0,1])
 sig = paras['sigma']
-freqidx = range(mid_siz//2)
+freqidx = range(en_mid_siz//2)
 freqmag = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),
-                                       [1],[0.1]))
+                                       [1],[2]))
 freqmag[N//2] = 0
 
 #=========================================================
@@ -56,7 +58,8 @@ report_freq = paras['reportFreq'] # Frequency of reporting
 record_freq = paras['recordFreq'] # Frequency of recording
 #----- Self-adjusted Parameters of BNet
 # Num of levels of the BF struct, must be a even num
-nlvl = 6
+en_nlvl = 4
+de_nlvl = 5
 
 print("======== Parameters =========")
 print("Batch Size:       %6d" % (batch_siz))
@@ -69,7 +72,8 @@ print("Max Iter:         %6d" % (max_iter))
 print("Num Levels:       %6d" % (nlvl))
 print("Prefix Coef:      %6r" % (prefixed))
 print("In Range:        (%6.2f, %6.2f)" % (in_range[0], in_range[1]))
-print("Mid Range:        (%6.2f, %6.2f)" % (mid_range[0], mid_range[1]))
+print("en_Mid Range:    (%6.2f, %6.2f)" % (en_mid_range[0], en_mid_range[1]))
+print("de_Mid Range:    (%6.2f, %6.2f)" % (de_mid_range[0], de_mid_range[1]))
 print("Out Range:       (%6.2f, %6.2f)" % (out_range[0], out_range[1]))
 
 
@@ -79,7 +83,7 @@ sess = tf.Session()
 
 trainInData = tf.placeholder(tf.float32, shape=(batch_siz,in_siz,1),
         name="trainInData")
-trainMidData = tf.placeholder(tf.float32, shape=(batch_siz,mid_siz,1),
+trainMidData = tf.placeholder(tf.float32, shape=(batch_siz,en_mid_siz,1),
         name="trainInData")
 trainOutData = tf.placeholder(tf.float32, shape=(batch_siz,out_siz//2,1),
         name="trainOutData")
@@ -91,13 +95,13 @@ trainMidNorm = tf.placeholder(tf.float32, shape=(batch_siz),
 global_steps=tf.Variable(0, trainable=False)
 #=========================================================
 #----- Training Preparation
-butterfly_net = ButterflyLayer(in_siz, mid_siz, False,
-        channel_siz, nlvl, prefixed,
-        in_range, mid_range)
+butterfly_net = ButterflyLayer(in_siz, en_mid_siz, False,
+        channel_siz, en_nlvl, prefixed,
+        in_range, en_mid_range)
 
-inv_butterfly_net = InvButterflyLayer(mid_siz//2, out_siz,
-            channel_siz , nlvl , prefixed ,
-             mid_range, out_range)
+inv_butterfly_net = InvButterflyLayer(de_mid_siz, out_siz,
+            channel_siz , de_nlvl , prefixed,
+             de_mid_range, out_range)
 learning_rate = tf.train.exponential_decay(adam_learning_rate,
                                            global_steps,100,
                                            adam_learning_rate_decay)
@@ -106,7 +110,7 @@ optimizer_adam = tf.train.AdamOptimizer(learning_rate,
 
 y_train_output = butterfly_net(trainInData)
 
-f_train_output = inv_butterfly_net(trainMidData)
+f_train_output = inv_butterfly_net(y_train_output)
 
 MSE_loss_train_y = tf.reduce_mean(
         tf.squared_difference(trainMidData, y_train_output))
@@ -132,10 +136,24 @@ print("Total Num Paras:  %6d" % ( np.sum( [np.prod(v.get_shape().as_list())
 #----- Step by Step Training
 
 sess.run(init)
-
-x_train,y_train,x_norm,y_norm = gen_ede_uni_data(freqmag,freqidx,batch_siz,sig)
-train_dict = {trainInData: x_train,trainMidData: y_train, trainOutData: x_train,
+err_list = np.zeros((max_iter//record_freq,2))
+epochs = np.linspace(0,max_iter,max_iter//record_freq)
+for it in range(max_iter):
+    x_train,y_train,x_norm,y_norm = gen_ede_uni_data(freqmag,freqidx,batch_siz,sig)
+    train_dict = {trainInData: x_train,trainMidData: y_train, trainOutData: x_train,
                   trainInNorm: x_norm,trainMidNorm: y_norm}
-[ytrain,y_loss,f_loss] = sess.run(
-        [y_train_output,L2_loss_train_y,L2_loss_train_f], feed_dict=train_dict)
-print("yLoss: %10e. fLoss:%10e." % (y_loss,f_loss))
+    if it % report_freq == 0:
+        [ytrain,y_loss,f_loss] = sess.run(
+            [y_train_output,L2_loss_train_y,L2_loss_train_f], feed_dict=train_dict)
+        print("Iter # %6d yLoss: %10e. fLoss:%10e." % (it, y_loss,f_loss))
+    if it % record_freq == 0:
+        err_list[it//record_freq,0] = y_loss
+        err_list[it//record_freq,1] = f_loss
+    sess.run(train_step, feed_dict=train_dict)  
+    
+err_list = np.log10(err_list)
+fig = plt.figure(0,figsize=(10,8))
+plt.plot(epochs, err_list[:,1], 'b', label = 'f_Train Error')
+plt.plot(epochs, err_list[:,0], 'r', label = 'Y_Train Error')
+plt.legend() # 添加图例
+plt.savefig("EDE_FFT_Train_Error_"+ str(prefixed)+".png")

@@ -36,7 +36,7 @@ def gen_uni_data(freqmag,freqidx,siz,sig):
 def gen_ede_uni_data(freqmag,freqidx,siz,sig):
     N = len(freqmag)
     K = len(freqidx)
-    a = 100
+    a = 10
 
     freqmag = np.tile(np.reshape(freqmag,[1,N]),(siz,1))
     consty = np.random.uniform(-np.sqrt(a),np.sqrt(a),[siz,1])

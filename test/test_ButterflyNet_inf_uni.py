@@ -178,7 +178,7 @@ plt.plot(epochs, K_list[5], 'c', label = 'Error 5')
 plt.plot(epochs, K_list[6], '#B22222', label = 'Error 6')
 plt.plot(epochs, K_list[7], '#8B0000', label = 'Error 7')
 plt.title('FFT_Training Error Plot')
-plt.legend() # 添加图例
+plt.legend() 
 plt.savefig("FFT_Train_Error_"+ str(prefixed)+".png" )
 plt.close(0)
 fig = plt.figure(1)
