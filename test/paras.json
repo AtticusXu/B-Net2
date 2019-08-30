@@ -8,15 +8,15 @@
     "klvl": 3,
     "alpha" : 2,
     "Ntest": 16384,
-    "prefixed": true,
+    "prefixed": false,
     "batchSize": 256,
-    "channelSize": 8,
-    "maxIter": 10000,
+    "channelSize": 12,
+    "maxIter": 1000,
     "reportFreq": 10,
     "recordFreq": 100,
     "ADAMparas": {
-        "learningRate": 1.0e-05,
-        "learningRatedecay": 0.980,
+        "learningRate": 0.01,
+        "learningRatedecay": 0.985,
         "beta1": 0.9,
         "beta2": 0.999
     }
