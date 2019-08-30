@@ -83,28 +83,31 @@ class CNNLayer(tf.keras.layers.Layer):
         else:
             self.InFilterVar = tf.Variable( tf.random_normal(
                     [self.in_filter_siz, 1, self.channel_siz],0,std),
-                        name="Filter_In" )
+                        name="Filter_In_ran" )
             self.InBiasVar = tf.Variable( tf.zeros([self.channel_siz]),
-                                         name="Bias_In" )
-        
+                                         name="Bias_In_ran" )
+            tf.summary.histogram("Filter_In_ran", self.InFilterVar)
+            tf.summary.histogram("Bias_In_ran", self.InBiasVar)
         # ell Layer
         self.FilterVars = []
         self.BiasVars = []
         self.FilterVars.append([])
         self.BiasVars.append([])
         for lvl in range(1,self.klvl+1):
-            varLabel = "LVL_%02d" % (lvl)
+            varLabel = "LVL_%02d_ran" % (lvl)
             filterVar = tf.Variable(
                     tf.random_normal([2,self.alph**(lvl-1)*self.channel_siz,
                         self.alph**lvl*self.channel_siz],0,std),
                     name="Filter_"+varLabel )
             biasVar = tf.Variable(tf.zeros([self.alph**lvl*self.channel_siz]),
                     name="Bias_"+varLabel )
+            tf.summary.histogram("Filter_"+varLabel, filterVar)
+            tf.summary.histogram("Bias_"+varLabel, biasVar)
             self.FilterVars.append(filterVar)
             self.BiasVars.append(biasVar)
         
         for lvl in range(self.klvl+1,self.nlvl+1):
-            varLabel = "LVL_%02d" % (lvl)
+            varLabel = "LVL_%02d_ran" % (lvl)
             filterVar = tf.Variable(
                     tf.random_normal(\
                     [2,self.alph**(self.klvl)*self.channel_siz,
@@ -113,6 +116,8 @@ class CNNLayer(tf.keras.layers.Layer):
             biasVar = tf.Variable(tf.zeros(\
                     [self.alph**self.klvl*self.channel_siz]),
                     name="Bias_"+varLabel )
+            tf.summary.histogram("Filter_"+varLabel, filterVar)
+            tf.summary.histogram("Bias_"+varLabel, biasVar)
             self.FilterVars.append(filterVar)
             self.BiasVars.append(biasVar)
 
@@ -121,11 +126,11 @@ class CNNLayer(tf.keras.layers.Layer):
         spa = int(max((self.alph**self.klvl)/(self.out_siz//2),1))
 
         for itk in range(0,self.out_siz//2):
-            varLabel = "Filter_Out_%04d" % (itk)
+            varLabel = "Filter_Out_%04d_ran" % (itk)
             denseVar = tf.Variable(
                     tf.random_normal([spa * self.channel_siz,
                          self.out_filter_siz],0,std),name=varLabel)
-
+            tf.summary.histogram(varLabel, denseVar)
             self.FeaDenseVars.append(denseVar)
 
     #==================================================================
@@ -134,13 +139,14 @@ class CNNLayer(tf.keras.layers.Layer):
 
         #----------------
         # Setup initial interpolation weights
-        mat = np.load('tftmp/Filter_In.npy')
+        mat = np.load('tftmp/Filter_In_str.npy')
         self.InFilterVar = tf.Variable( mat.astype(np.float32),
-                name="Filter_In" )
-        mat = np.load('tftmp/Bias_In.npy')
+                name="Filter_In_str" )
+        mat = np.load('tftmp/Bias_In_str.npy')
         self.InBiasVar = tf.Variable( mat.astype(np.float32),
-                name="Bias_In" )
-
+                name="Bias_In_str" )
+        tf.summary.histogram("Filter_In_str", self.InFilterVar)
+        tf.summary.histogram("Bias_In_str", self.InBiasVar)
         #----------------
         # Setup right factor interpolation weights
         self.FilterVars = []
@@ -152,7 +158,7 @@ class CNNLayer(tf.keras.layers.Layer):
                     2**lvl*self.channel_siz))
             bigmatb = np.zeros((2**lvl*self.channel_siz))
             for itk in range(0,2**lvl):
-                varLabel = "LVL_%02d_%04d" % (lvl, itk)
+                varLabel = "LVL_%02d_%04d_str" % (lvl, itk)
                 offset1 = itk//2*self.channel_siz
                 offset2 = itk*self.channel_siz
                 siz = self.channel_siz
@@ -161,11 +167,13 @@ class CNNLayer(tf.keras.layers.Layer):
                         offset2:offset2+siz] = mat
                 mat = np.load('tftmp/Bias_'+varLabel+'.npy')
                 bigmatb[offset2:offset2+siz] = mat
-            varLabel = "LVL_%02d" % (lvl)
+            varLabel = "LVL_%02d_str" % (lvl)
             filterVar = tf.Variable( bigmatf.astype(np.float32),
                     name="Filter_"+varLabel )
             biasVar = tf.Variable( bigmatb.astype(np.float32),
                     name="Bias_"+varLabel )
+            tf.summary.histogram("Filter_"+varLabel, filterVar)
+            tf.summary.histogram("Bias_"+varLabel, biasVar)
             self.FilterVars.append(filterVar)
             self.BiasVars.append(biasVar)
             
@@ -174,7 +182,7 @@ class CNNLayer(tf.keras.layers.Layer):
                     2**self.klvl*self.channel_siz))
             bigmatb = np.zeros((2**self.klvl*self.channel_siz))
             for itk in range(0,2**self.klvl):
-                varLabel = "LVL_%02d_%04d" % (lvl, itk*(2**(lvl-self.klvl)))
+                varLabel = "LVL_%02d_%04d_str" % (lvl, itk*(2**(lvl-self.klvl)))
                 offset = itk*self.channel_siz
                 siz = self.channel_siz
                 mat = np.load('tftmp/Filter_'+varLabel+'.npy')
@@ -182,11 +190,13 @@ class CNNLayer(tf.keras.layers.Layer):
                         offset:offset+siz] = mat
                 mat = np.load('tftmp/Bias_'+varLabel+'.npy')
                 bigmatb[offset:offset+siz] = mat
-            varLabel = "LVL_%02d" % (lvl)
+            varLabel = "LVL_%02d_str" % (lvl)
             filterVar = tf.Variable( bigmatf.astype(np.float32),
                     name="Filter_"+varLabel )
             biasVar = tf.Variable( bigmatb.astype(np.float32),
                     name="Bias_"+varLabel )
+            tf.summary.histogram("Filter_"+varLabel, filterVar)
+            tf.summary.histogram("Bias_"+varLabel, biasVar)
             self.FilterVars.append(filterVar)
             self.BiasVars.append(biasVar)
 
@@ -194,11 +204,12 @@ class CNNLayer(tf.keras.layers.Layer):
         # Setup final interpolation weights
         self.FeaDenseVars = []
         for itk in range(0,2**self.klvl):
-            varLabel = "%04d" % (itk)
+            varLabel = "%04d_str" % (itk)
             mat = np.load('tftmp/Filter_Out_'+varLabel+'.npy')
             denseVar = tf.Variable( mat.astype(np.float32),
-                name="Filter_Out" )
+                name="Filter_Out_str" )
+            tf.summary.histogram(varLabel, denseVar)
             self.FeaDenseVars.append(denseVar)
-
+            
         
 
