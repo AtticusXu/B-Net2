@@ -37,6 +37,8 @@ for i in range(5*out_siz//2-4):
 for i in range(out_siz//2):  
     freqmag[5*out_siz//2-4,i]=0.05
     freqmag[5*out_siz//2-4,-i]=0.05
+a = np.zeros((1,out_siz))
+a[0,0]=1    
 #=========================================================
 #----- Parameters Setup
 
@@ -103,19 +105,28 @@ def train():
     
     y_train_output = butterfly_net(trainInData)
     
-    MSE_loss_train = tf.reduce_mean(
-            tf.squared_difference(trainOutData, y_train_output))
+    #MSE_loss_train = tf.reduce_mean(
+    #        tf.squared_difference(trainOutData, y_train_output))
+    A_MSE_loss_train = tf.reduce_mean(tf.multiply(tf.squeeze(
+        tf.squared_difference(trainOutData, y_train_output)),a))
+
+    A_train_norm = tf.sqrt(tf.reduce_sum(tf.multiply(tf.squeeze(
+        tf.square(trainOutData)),a),1))
     
-    L2_loss_train = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
-            tf.squared_difference(trainOutData, y_train_output)),1)),trainNorm))
+    A_L2_loss_train = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.multiply(
+        tf.squeeze(tf.squared_difference(trainOutData, y_train_output)),a),1)),
+                    A_train_norm))
+    
+    #L2_loss_train = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
+    #        tf.squared_difference(trainOutData, y_train_output)),1)),trainNorm))
     
     Sqr_loss_train_K = tf.reduce_mean(tf.squeeze(tf.squared_difference(
             trainOutData, y_train_output)),0)
     
     
-    y_norm_train = tf.reduce_mean(trainNorm)
+    y_norm_train = tf.reduce_mean(A_train_norm)
 
-    train_step = optimizer_adam.minimize(MSE_loss_train,global_step=global_steps)
+    train_step = optimizer_adam.minimize(A_MSE_loss_train,global_step=global_steps)
     
     # Initialize Variables
     init = tf.global_variables_initializer()
@@ -139,7 +150,7 @@ def train():
                           trainNorm: y_norm}
             if it % report_freq == 0:
                 [temp_train_loss,y_norm] = sess.run(
-                       [L2_loss_train,y_norm_train], feed_dict=train_dict)
+                       [A_L2_loss_train,y_norm_train], feed_dict=train_dict)
                 print("Iter # %6d: Train Loss: %10e.%10e" % (it,
                       temp_train_loss,y_norm))
             if it % record_freq == 0:
