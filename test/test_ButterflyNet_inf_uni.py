@@ -33,7 +33,7 @@ freqmag = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),
 freqmag[N//2] = 0
 a = np.zeros((1,out_siz))
 a[0,0]=1
-a[0,1]=1
+
 #=========================================================
 #----- Parameters Setup
 
@@ -110,11 +110,12 @@ MSE_loss_train = tf.reduce_mean(
 A_MSE_loss_train = tf.reduce_mean(tf.multiply(tf.squeeze(
         tf.squared_difference(trainOutData, y_train_output)),a))
 
-A_norm = tf.sqrt(tf.reduce_sum(tf.multiply(tf.squeeze(
+A_train_norm = tf.sqrt(tf.reduce_sum(tf.multiply(tf.squeeze(
         tf.square(trainOutData)),a),1))
 
 A_L2_loss_train = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.multiply(
-        tf.squeeze(tf.squared_difference(trainOutData, y_train_output)),a),1)),A_norm))
+        tf.squeeze(tf.squared_difference(trainOutData, y_train_output)),a),1)),
+                    A_train_norm))
 
 L2_loss_train = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
         tf.squared_difference(trainOutData, y_train_output)),1)),trainNorm))
@@ -127,8 +128,15 @@ Sqr_loss_train_K = tf.reduce_mean(tf.squeeze(tf.squared_difference(
 
 y_norm_train = tf.reduce_mean(trainNorm)
 
+A_test_norm = tf.sqrt(tf.reduce_sum(tf.multiply(tf.squeeze(
+        tf.square(testOutData)),a),1))
+
 L2_loss_test = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
         tf.squared_difference(testOutData, y_test_output)),1)),testNorm))
+
+A_L2_loss_test = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.multiply(
+        tf.squeeze(tf.squared_difference(testOutData, y_test_output)),a),1)),
+        A_test_norm))
 
 L2_loss_test_list = tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
         tf.squared_difference(testOutData, y_test_output)),1)),testNorm)
@@ -174,7 +182,7 @@ x_test,y_test,y_norm = gen_uni_data(freqmag,freqidx,test_batch_siz,sig)
 test_dict = {testInData: x_test, testOutData: y_test,
                   testNorm: y_norm}
 [test_loss, test_loss_list, test_loss_k] = sess.run(
-        [L2_loss_test, L2_loss_test_list, Sqr_loss_test_K],feed_dict=test_dict)
+        [A_L2_loss_test, L2_loss_test_list, Sqr_loss_test_K],feed_dict=test_dict)
 print("Test Loss: %10e." % (test_loss))
 
 sess.close()
