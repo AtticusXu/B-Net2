@@ -35,7 +35,8 @@ for i in range(5*out_siz//2-4):
 for i in range(out_siz//2):  
     freqmag[5*out_siz//2-4,i]=0.05
     freqmag[5*out_siz//2-4,-i]=0.05
-print(freqmag[3])
+a = np.zeros((1,out_siz))
+a[0,0]=1
 #=========================================================
 #----- Parameters Setup
 
@@ -100,19 +101,28 @@ def train():
     
     y_train_output = CNN_net(trainInData)
     
-    MSE_loss_train = tf.reduce_mean(
-            tf.squared_difference(trainOutData, y_train_output))
+    #MSE_loss_train = tf.reduce_mean(
+    #        tf.squared_difference(trainOutData, y_train_output))
+    A_MSE_loss_train = tf.reduce_mean(tf.multiply(tf.squeeze(
+        tf.squared_difference(trainOutData, y_train_output)),a))
+
+    A_train_norm = tf.sqrt(tf.reduce_sum(tf.multiply(tf.squeeze(
+        tf.square(trainOutData)),a),1))
+    
+    A_L2_loss_train = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.multiply(
+        tf.squeeze(tf.squared_difference(trainOutData, y_train_output)),a),1)),
+                    A_train_norm))
     
     L2_loss_train = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
             tf.squared_difference(trainOutData, y_train_output)),1)),trainNorm))
     
-    Sqr_loss_train_K = tf.reduce_mean(tf.squeeze(tf.squared_difference(
-            trainOutData, y_train_output)),0)
+    #Sqr_loss_train_K = tf.reduce_mean(tf.squeeze(tf.squared_difference(
+    #        trainOutData, y_train_output)),0)
     
     
-    y_norm_train = tf.reduce_mean(trainNorm)
+    y_norm_train = tf.reduce_mean(A_train_norm)
 
-    train_step = optimizer_adam.minimize(MSE_loss_train,global_step=global_steps)
+    train_step = optimizer_adam.minimize(A_MSE_loss_train,global_step=global_steps)
     
     # Initialize Variables
     init = tf.global_variables_initializer()
@@ -122,8 +132,9 @@ def train():
     
     #=========================================================
     #----- Step by Step Training
-    S=2
-    K_list = np.zeros((S,out_siz,max_iter//record_freq)) 
+    S=20
+    #K_list = np.zeros((S,out_siz,max_iter//record_freq)) 
+    z_list = np.zeros((S,max_iter//record_freq))
     err_list = np.zeros((S,max_iter//record_freq))
     for s in range(S):
         saver = tf.train.Saver()
@@ -135,19 +146,21 @@ def train():
             train_dict = {trainInData: x_train, trainOutData: y_train,
                           trainNorm: y_norm}
             if it % report_freq == 0:
-                [temp_train_loss,y_norm] = sess.run(
-                       [L2_loss_train,y_norm_train], feed_dict=train_dict)
-                print("Iter # %6d: Train Loss: %10e.%10e" % (it,
-                      temp_train_loss,y_norm))
+                [temp_train_loss,y_norm,temp_l2_loss] = sess.run(
+                       [A_MSE_loss_train,y_norm_train,A_L2_loss_train],
+                       feed_dict=train_dict)
+                print("Iter # %6d: MSE Loss: %10e.L2Loss:%10e. norm:%10e."% (it,
+                      temp_train_loss,temp_l2_loss,y_norm))
             if it % record_freq == 0:
-                K_loss = sess.run(Sqr_loss_train_K,feed_dict=train_dict)
+                #K_loss = sess.run(Sqr_loss_train_K,feed_dict=train_dict)
+                z_loss = sess.run(L2_loss_train,feed_dict=train_dict)
                 err_list[s,it//record_freq] = temp_train_loss
-                K_list[s,:,it//record_freq] = K_loss
+                z_list[s,it//record_freq] = z_loss
             sess.run(train_step, feed_dict=train_dict)
         
         saver.save(sess, MODEL_SAVE_PATH + MODEL_NAME+".ckpt")
     np.save('train_model/cnn_err_list_'+str(prefixed), err_list)
-    np.save('train_model/cnn_K_list_'+str(prefixed), K_list)  
+    np.save('train_model/cnn_z_list_'+str(prefixed), z_list)  
     sess.close()
 
 
