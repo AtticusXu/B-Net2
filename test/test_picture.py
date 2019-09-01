@@ -21,21 +21,25 @@ fft_mk_test_loss_list_f = np.load('train_model/fft_mk_test_loss_list_False.npy')
 cnn_mk_test_loss_list_t = np.load('train_model/cnn_mk_test_loss_list_True.npy')
 cnn_mk_test_loss_list_f = np.load('train_model/cnn_mk_test_loss_list_False.npy')
 
-fft_mk_test_loss_klist_t = np.load('train_model/fft_mk_test_loss_klist_True.npy')
-fft_mk_test_loss_klist_f = np.load('train_model/fft_mk_test_loss_klist_False.npy')
-cnn_mk_test_loss_klist_t = np.load('train_model/cnn_mk_test_loss_klist_True.npy')
-cnn_mk_test_loss_klist_f = np.load('train_model/cnn_mk_test_loss_klist_False.npy')
+fft_mk_test_loss_list_t = np.load('train_model/fft_mk_test_loss_l2_list_True.npy')
+fft_mk_test_loss_list_f = np.load('train_model/fft_mk_test_loss_l2_list_False.npy')
+cnn_mk_test_loss_list_t = np.load('train_model/cnn_mk_test_loss_l2_list_True.npy')
+cnn_mk_test_loss_list_f = np.load('train_model/cnn_mk_test_loss_l2_list_False.npy')
 
 fft_err_list_t = np.load('train_model/fft_err_list_True.npy')
 fft_err_list_f = np.load('train_model/fft_err_list_False.npy')
 cnn_err_list_t = np.load('train_model/cnn_err_list_True.npy')
 cnn_err_list_f = np.load('train_model/cnn_err_list_False.npy')
 
-fft_k_list_t = np.load('train_model/fft_k_list_True.npy')
-fft_k_list_f = np.load('train_model/fft_k_list_False.npy')
-cnn_k_list_t = np.load('train_model/cnn_k_list_True.npy')
-cnn_k_list_f = np.load('train_model/cnn_k_list_False.npy')
+fft_k_list_t = np.load('train_model/fft_z_list_True.npy')
+fft_k_list_f = np.load('train_model/fft_z_list_False.npy')
+cnn_k_list_t = np.load('train_model/cnn_z_list_True.npy')
+cnn_k_list_f = np.load('train_model/cnn_z_list_False.npy')
 
+
+
+non_train = np.log10(np.ones((36))*np.sqrt(6.815701e-05)/4.570580e-01)
+zero = np.zeros((36))
 fft_mk_test_loss_list_t_mean = np.mean(np.log10(fft_mk_test_loss_list_t), axis=1)
 cnn_mk_test_loss_list_t_mean = np.mean(np.log10(cnn_mk_test_loss_list_t), axis=1)
 fft_mk_test_loss_list_t_ste = np.std(np.log10(fft_mk_test_loss_list_t), axis=1)
@@ -56,8 +60,8 @@ plt.errorbar([-0.5],fft_mk_test_loss_list_t_mean[-1],
              yerr=fft_mk_test_loss_list_t_ste[-1],fmt='bo',
              ecolor='g',ms=3,mfc='b',mec='b',
              elinewidth=2,capsize=3,label='FFT-c')
-plt.legend(loc='lower right')
-plt.savefig("trans_error_-1"+ str(True)+".png" )
+#plt.legend(loc='lower right')
+#plt.savefig("trans_error_-1"+ str(True)+".png" )
 
 
 fft_mk_test_loss_list_f_mean = np.mean(np.log10(fft_mk_test_loss_list_f), axis=1)
@@ -66,7 +70,7 @@ fft_mk_test_loss_list_f_ste = np.std(np.log10(fft_mk_test_loss_list_f), axis=1)
 cnn_mk_test_loss_list_f_ste = np.std(np.log10(cnn_mk_test_loss_list_f), axis=1)
 print(fft_mk_test_loss_list_t_mean)
 print(cnn_mk_test_loss_list_t_mean)
-fig = plt.figure(1,figsize=(10,8))
+#fig = plt.figure(1,figsize=(10,8))
 plt.errorbar(k,cnn_mk_test_loss_list_f_mean[0:-1],
              yerr=cnn_mk_test_loss_list_f_ste[0:-1],fmt='r',
              ecolor='hotpink',elinewidth=2,capsize=3,label='CNN-k')
@@ -81,8 +85,10 @@ plt.errorbar([-0.5],fft_mk_test_loss_list_f_mean[-1],
              yerr=fft_mk_test_loss_list_f_ste[-1],fmt='bo',
              ecolor='g',ms=3,mfc='b',mec='b',
              elinewidth=2,capsize=3,label='FFT-c')
+plt.plot(k,zero,'g--')
+plt.plot(k,non_train,'y--')
 plt.legend(loc='lower right')
-plt.savefig("trans_error_-1"+ str(False)+".png" )
+plt.savefig("trans_error_a_0.png" )
 
 fft_mk_test_loss_klist_t_mean = np.mean(np.log10(fft_mk_test_loss_klist_t), axis=0)
-print(fft_mk_test_loss_klist_t_mean)
+print(cnn_mk_test_loss_list_t_ste)

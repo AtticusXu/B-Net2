@@ -37,7 +37,8 @@ for i in range(5*out_siz//2-4):
 for i in range(out_siz//2):  
     freqmag[5*out_siz//2-4,i]=0.05
     freqmag[5*out_siz//2-4,-i]=0.05
-
+a = np.zeros((1,out_siz))
+a[0,0]=1
 #=========================================================
 #----- Parameters Setup
 
@@ -93,13 +94,20 @@ def evaluate():
     L2_loss_test = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
             tf.squared_difference(testOutData, y_test_output)),1)),testNorm))
     
-    L2_loss_test_list = tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
-            tf.squared_difference(testOutData, y_test_output)),1)),testNorm)
+    #L2_loss_test_list = tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
+    #        tf.squared_difference(testOutData, y_test_output)),1)),testNorm)
     
-    Sqr_loss_test_K = tf.reduce_mean(tf.squeeze(
-            tf.squared_difference(testOutData, y_test_output)),0)
+    A_MSE_loss_test = tf.reduce_mean(tf.multiply(tf.squeeze(
+        tf.squared_difference(testOutData, y_test_output)),a))
     
-    Sqr_test_norm_K = tf.reduce_mean(tf.squeeze(tf.square(testOutData)),0)
+    A_test_norm = tf.sqrt(tf.reduce_sum(tf.multiply(tf.squeeze(
+        tf.square(testOutData)),a),1))
+      
+    y_norm_test = tf.reduce_mean(A_test_norm)
+    #Sqr_loss_test_K = tf.reduce_mean(tf.squeeze(
+    #        tf.squared_difference(testOutData, y_test_output)),0)
+    #
+    #Sqr_test_norm_K = tf.reduce_mean(tf.squeeze(tf.square(testOutData)),0)
     
     init = tf.global_variables_initializer()
     
@@ -108,7 +116,7 @@ def evaluate():
     S=20
     mk_test_loss_list = np.zeros((5*out_siz//2-3,S))
     epochs = np.linspace(0,max_iter,max_iter//record_freq)
-    mk_test_loss_klist = np.zeros((S,5*out_siz//2-3,out_siz//2))
+    mk_test_loss_l2_list = np.zeros((5*out_siz//2-3,S))
     for s in range(S):
         sess.run(init)
         MODEL_SAVE_PATH = "train_model/"
@@ -119,19 +127,20 @@ def evaluate():
                                                 freqidx,test_batch_siz,sig)
             test_dict = {testInData: x_test, testOutData: y_test,
                          testNorm: y_norm}
-            [test_loss, test_loss_list, test_loss_k,K_norm] = sess.run(
-            [L2_loss_test, L2_loss_test_list, Sqr_loss_test_K,Sqr_test_norm_K],
+            [test_loss, test_norm, test_z_loss_k] = sess.run(
+            [A_MSE_loss_test, y_norm_test, L2_loss_test],
             feed_dict=test_dict)
         
             mk_test_loss_list[j,s] = test_loss
+            mk_test_loss_l2_list[j,s] = np.sqrt(test_loss)/test_norm
             #print("Test Loss: %10e." % (test_loss))
             
-            for i in range(8):
-                K_norm[i] = np.sqrt(K_norm[2*i] + K_norm[2*i+1])
+            #for i in range(8):
+            #    K_norm[i] = np.sqrt(K_norm[2*i] + K_norm[2*i+1])
             #   K_list[s,i,:] = np.sqrt(K_list[s,2*i,:] + K_list[s,2*i+1,:])\
             #                   /K_norm[i]
-                mk_test_loss_klist[s,j,i] = np.sqrt(test_loss_k[2*i] + 
-                                  test_loss_k[2*i+1])/K_norm[i]
+            #    mk_test_loss_klist[s,j,i] = np.sqrt(test_loss_k[2*i] + 
+            #                      test_loss_k[2*i+1])/K_norm[i]
             
         #err_list = np.log10(err_list)
         #K_list = np.log10(K_list)
@@ -141,8 +150,8 @@ def evaluate():
     print(mk_test_loss_list)
     np.save('train_model/fft_mk_test_loss_list_'+str(prefixed), 
             mk_test_loss_list)
-    np.save('train_model/fft_mk_test_loss_klist_'+str(prefixed), 
-            mk_test_loss_klist)
+    np.save('train_model/fft_mk_test_loss_l2_list_'+str(prefixed), 
+            mk_test_loss_l2_list)
     #for k in range(out_siz//2):
     #    fig = plt.figure(k,figsize=(10,8))
     #    for s in range(S):
