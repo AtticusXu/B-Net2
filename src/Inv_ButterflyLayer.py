@@ -15,11 +15,12 @@ class InvButterflyLayer(tf.keras.layers.Layer):
         self.out_siz        = out_siz
         #TODO: set the default values based on in_siz and out_siz
         self.channel_siz    = channel_siz
-        self.nlvl           = min(np.floor(np.log2(mid_siz/2)).astype('int'),nlvl)
+        self.nlvl           = min(np.floor(np.log2(mid_siz)).astype('int'),nlvl)
         self.klvl           = self.nlvl
         self.mid_filter_siz = mid_siz // 2**self.nlvl
         self.out_filter_siz = out_siz // 2**self.klvl
         self.mid_range      = mid_range
+        #self.beta           = out_siz//2//mid_siz
         self.out_range      = out_range
 
         if prefixed:
@@ -33,17 +34,17 @@ class InvButterflyLayer(tf.keras.layers.Layer):
     # Forward structure in the layer
     def call(self, in_data):
         
-        
+        print(self.nlvl )
         
         # Mid Layer
         pre_siz = np.size(in_data,1)//2
         en_mid_data = tf.reshape(in_data,(np.size(in_data,0),
             pre_siz,2))
-        en_mid_data_r = en_mid_data[:,:,0]
+        en_mid_data_r0 = en_mid_data[:,:,0]
         en_mid_data_i = en_mid_data[:,:,1]
-        en_mid_data_r = tf.reshape(tf.concat([en_mid_data_r[:,0:self.mid_siz//2],
+        en_mid_data_r = tf.reshape(tf.concat([en_mid_data_r0[:,0:self.mid_siz//2],
                                               np.zeros((np.size(in_data,0),1)),
-                                 en_mid_data_r[:,self.mid_siz//2-1:0:-1]],1),
+                                 en_mid_data_r0[:,self.mid_siz//2-1:0:-1]],1),
                                     (np.size(in_data,0),self.mid_siz,1))
         en_mid_data_i = tf.reshape(tf.concat([en_mid_data_i[:,0:self.mid_siz//2],
                                               np.zeros((np.size(in_data,0),1)),
@@ -122,11 +123,14 @@ class InvButterflyLayer(tf.keras.layers.Layer):
         OutInterp_i = tf.reshape(OutInterp_i,shape=(np.size(in_data,0),
             self.out_siz//2,2))
         out_data_r = tf.divide(tf.subtract(
-                OutInterp_r[:,:,0],OutInterp_i[:,:,1]),self.mid_siz)
-        #out_data_i = tf.add(OutInterp_r[:,:,1],OutInterp_i[:,:,0])
+                OutInterp_r[:,:,0],OutInterp_i[:,:,1]),self.out_siz//2)
+        out_data_i = tf.divide(tf.add(OutInterp_r[:,:,1],OutInterp_i[:,:,0]),
+                               self.out_siz//2)
+        out_data_i = tf.reshape(out_data_i,shape=(np.size(in_data,0),
+            self.out_siz//2,1))
         out_data = tf.reshape(out_data_r,shape=(np.size(in_data,0),
             self.out_siz//2,1))
-        return(out_data)
+        return(out_data,de_mid_data,out_data_i)
 
     #==================================================================
     # Initialize variables in the layer
@@ -213,7 +217,7 @@ class InvButterflyLayer(tf.keras.layers.Layer):
         NG = int(self.channel_siz/4)
         ChebNodes = (np.cos(np.array(range(2*NG-1,0,-2))/2/NG*math.pi) +
                 1)/2
-        xNodes = np.arange(0,1,1.0/self.mid_filter_siz)
+        xNodes = np.arange(0,1,2.0/self.mid_filter_siz)
         xlen = (self.mid_range[1] - self.mid_range[0])/2**self.nlvl
         LMat = LagrangeMat(ChebNodes,xNodes)
         kcen = np.mean(self.out_range)
@@ -232,8 +236,8 @@ class InvButterflyLayer(tf.keras.layers.Layer):
                 name="Filter_de_In_str" )
         self.de_InBiasVar = tf.Variable( tf.zeros([self.channel_siz]),
                 name="Bias_de_In_str" )
-        tf.summary.histogram("Filter_de_In_str", self.InFilterVar)
-        tf.summary.histogram("Bias_de_In_str", self.InBiasVar)
+        tf.summary.histogram("Filter_de_In_str", self.de_InFilterVar)
+        tf.summary.histogram("Bias_de_In_str", self.de_InBiasVar)
         #----------------
         # Setup en_ell layer weights
         ChebNodes = (np.cos(np.array(range(2*NG-1,0,-2))/2/NG*math.pi) +
@@ -398,7 +402,7 @@ class InvButterflyLayer(tf.keras.layers.Layer):
 
             for iti in range(0,NG):
                 for itj in range(0,self.out_filter_siz//2):
-                    KVal = np.exp( 2*math.pi*1j
+                    KVal = np.exp(2*math.pi*1j
                             *kNodes[itj]*xNodes[iti])
                     mat[4*iti  ,2*itj  ] =   KVal.real
                     mat[4*iti+1,2*itj  ] = - KVal.imag

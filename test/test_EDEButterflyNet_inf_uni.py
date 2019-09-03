@@ -28,12 +28,13 @@ de_mid_siz = min(in_siz,en_mid_siz)
 out_siz = 64
 in_range = np.float32([0,1])
 en_mid_range = np.float32([0,en_mid_siz//2])
-de_mid_range = np.float32([0,de_mid_siz])
-out_range = np.float32([0,1])
+de_mid_range = np.float32([0,1])
+out_range = np.float32([0,32])
 sig = paras['sigma']
 freqidx = range(en_mid_siz//2)
 freqmag = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),
-                                       [1],[2]))
+                                       [2],[0.1]))
+#freqmag = np.ones((N))￼
 freqmag[N//2] = 0
 
 #=========================================================
@@ -58,8 +59,8 @@ report_freq = paras['reportFreq'] # Frequency of reporting
 record_freq = paras['recordFreq'] # Frequency of recording
 #----- Self-adjusted Parameters of BNet
 # Num of levels of the BF struct, must be a even num
-en_nlvl = 4
-de_nlvl = 5
+en_nlvl = 5
+de_nlvl = 4
 
 print("======== Parameters =========")
 print("Batch Size:       %6d" % (batch_siz))
@@ -69,7 +70,8 @@ print("ADAM LR decay:    %6.4f" % (adam_learning_rate_decay))
 print("ADAM Beta1:       %6.4f" % (adam_beta1))
 print("ADAM Beta2:       %6.4f" % (adam_beta2))
 print("Max Iter:         %6d" % (max_iter))
-print("Num Levels:       %6d" % (nlvl))
+print("en_Num Levels:       %6d" % (en_nlvl))
+print("de_Num Levels:       %6d" % (de_nlvl))
 print("Prefix Coef:      %6r" % (prefixed))
 print("In Range:        (%6.2f, %6.2f)" % (in_range[0], in_range[1]))
 print("en_Mid Range:    (%6.2f, %6.2f)" % (en_mid_range[0], en_mid_range[1]))
@@ -110,7 +112,7 @@ optimizer_adam = tf.train.AdamOptimizer(learning_rate,
 
 y_train_output = butterfly_net(trainInData)
 
-f_train_output = inv_butterfly_net(y_train_output)
+f_train_output,en_mid,idata = inv_butterfly_net(trainMidData)
 
 MSE_loss_train_y = tf.reduce_mean(
         tf.squared_difference(trainMidData, y_train_output))
@@ -139,7 +141,7 @@ sess.run(init)
 err_list = np.zeros((max_iter//record_freq,2))
 epochs = np.linspace(0,max_iter,max_iter//record_freq)
 for it in range(max_iter):
-    x_train,y_train,x_norm,y_norm = gen_ede_uni_data(freqmag,freqidx,batch_siz,sig)
+    x_train,y_train,x_norm,y_norm,y = gen_ede_uni_data(freqmag,freqidx,batch_siz,sig)
     train_dict = {trainInData: x_train,trainMidData: y_train, trainOutData: x_train,
                   trainInNorm: x_norm,trainMidNorm: y_norm}
     if it % report_freq == 0:
@@ -150,10 +152,20 @@ for it in range(max_iter):
         err_list[it//record_freq,0] = y_loss
         err_list[it//record_freq,1] = f_loss
     sess.run(train_step, feed_dict=train_dict)  
-    
+
+[x,f] = sess.run([trainInData[0,:,0],f_train_output[0,:,0]], feed_dict=train_dict)
+[m1,m2,i] = sess.run([trainMidData[0,:,0],en_mid[0,:],idata[0,:,0]], feed_dict=train_dict)
+print(m1)
+print(m2)
+print(y[0])
+print(ytrain[0,:,0])
 err_list = np.log10(err_list)
 fig = plt.figure(0,figsize=(10,8))
-plt.plot(epochs, err_list[:,1], 'b', label = 'f_Train Error')
-plt.plot(epochs, err_list[:,0], 'r', label = 'Y_Train Error')
-plt.legend() # 添加图例
-plt.savefig("EDE_FFT_Train_Error_"+ str(prefixed)+".png")
+plt.plot(np.linspace(0,in_siz,in_siz),x,'r')
+plt.plot(np.linspace(0,in_siz,in_siz),f,'b')
+plt.plot(np.linspace(0,in_siz,in_siz),i,'g')
+
+#plt.plot(epochs, err_list[:,1], 'b', label = 'f_Train Error')
+#plt.plot(epochs, err_list[:,0], 'r', label = 'Y_Train Error')
+#plt.legend() # 添加图例
+#plt.savefig("EDE_FFT_Train_Error_"+ str(prefixed)+".png")

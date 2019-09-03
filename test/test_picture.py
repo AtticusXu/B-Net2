@@ -38,7 +38,7 @@ cnn_k_list_f = np.load('train_model/cnn_z_list_False.npy')
 
 
 
-non_train = np.log10(np.ones((36))*np.sqrt(6.815701e-05)/4.570580e-01)
+non_train = np.log10(np.ones((36))*np.sqrt(9.012633e-05)/6.718291e-01)
 zero = np.zeros((36))
 fft_mk_test_loss_list_t_mean = np.mean(np.log10(fft_mk_test_loss_list_t), axis=1)
 cnn_mk_test_loss_list_t_mean = np.mean(np.log10(cnn_mk_test_loss_list_t), axis=1)
@@ -88,7 +88,7 @@ plt.errorbar([-0.5],fft_mk_test_loss_list_f_mean[-1],
 plt.plot(k,zero,'g--')
 plt.plot(k,non_train,'y--')
 plt.legend(loc='lower right')
-plt.savefig("trans_error_a_0.png" )
+plt.savefig("trans_error_a_02_4-7.png" )
 
 fft_mk_test_loss_klist_t_mean = np.mean(np.log10(fft_mk_test_loss_klist_t), axis=0)
 print(cnn_mk_test_loss_list_t_ste)

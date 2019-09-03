@@ -44,7 +44,7 @@ def gen_ede_uni_data(freqmag,freqidx,siz,sig):
     if N % 2 == 0:
         halfy = np.random.uniform(-np.sqrt(a/2),np.sqrt(a/2),[siz,N//2-1])
         realy = np.concatenate((consty,halfy,zeroy,halfy[:,::-1]),axis=1)
-        halfy = np.random.uniform(-np.sqrt(a/2),np.sqrt(a/2),[siz,N//2-1])
+        halfy = np.zeros([siz,N//2-1])
         imagy = np.concatenate((zeroy,halfy,zeroy,-halfy[:,::-1]),axis=1)
     else:
         halfy = np.random.uniform(-np.sqrt(a/2),np.sqrt(a/2),[siz,N//2])
@@ -64,7 +64,7 @@ def gen_ede_uni_data(freqmag,freqidx,siz,sig):
     ynorm = np.squeeze(np.linalg.norm(ydata,2,1))
     xdata = np.float32(xdata)
     ydata = np.float32(ydata)
-    return xdata,ydata,xnorm,ynorm
+    return xdata,ydata,xnorm,ynorm,y
     
 def gen_2D_straight_data(siz_x,siz_y,siz_u,siz_v, N):
     

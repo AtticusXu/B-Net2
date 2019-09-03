@@ -37,8 +37,13 @@ for i in range(5*out_siz//2-4):
 for i in range(out_siz//2):  
     freqmag[5*out_siz//2-4,i]=0.05
     freqmag[5*out_siz//2-4,-i]=0.05
+    
+
 a = np.zeros((1,out_siz))
-a[0,0]=1    
+a[0,0] = 1
+a[0,1] = 1
+a[0,14] = 0
+a[0,15] = 0    
 #=========================================================
 #----- Parameters Setup
 
@@ -147,6 +152,7 @@ def train():
         MODEL_NAME = "fft_"+str(prefixed)+"_"+str(s)+"_model"
         for it in range(max_iter):
             x_train,y_train,y_norm = gen_uni_data(freqmag[0],freqidx,batch_siz,sig)
+            print(y_train[0])
             train_dict = {trainInData: x_train, trainOutData: y_train,
                           trainNorm: y_norm}
             if it % report_freq == 0:
