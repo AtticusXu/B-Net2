@@ -138,7 +138,9 @@ def gen_gaussian_data(freqmag,freqidx,siz):
     realy = realy*freqmag
     imagy = imagy*freqmag
     y = realy + imagy*1j
-    xdata = np.reshape(np.fft.ifft(y,N,1).real,(siz,N,1),order='F')
+    realx = np.reshape(np.fft.ifft(y,N,1).real,(siz,1,N),order='F')
+    imagx = np.reshape(np.fft.ifft(y,N,1).imag,(siz,1,N),order='F')
+    xdata = np.reshape(np.concatenate((realx,imagx),axis=1),(siz,-1,1),order='F')
     realy = np.reshape(realy[:,freqidx],(siz,1,-1),order='F')
     imagy = np.reshape(imagy[:,freqidx],(siz,1,-1),order='F')
     ydata = np.reshape(np.concatenate((realy,imagy),axis=1),(siz,-1,1),order='F')
