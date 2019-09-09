@@ -1,0 +1,23 @@
+{
+    "inputSize": 32,
+    "outputSize": 32,
+    "energyCalcSize": "sqr",
+    "sigma": 2,
+    "Ntrain": "inf",
+    "nlvl": 5,
+    "klvl": 3,
+    "alpha" : 2,
+    "Ntest": 16384,
+    "prefixed": true,
+    "batchSize": 256,
+    "channelSize": 12,
+    "maxIter": 100,
+    "reportFreq": 10,
+    "recordFreq": 100,
+    "ADAMparas": {
+        "learningRate": 0.0,
+        "learningRatedecay": 0.985,
+        "beta1": 0.9,
+        "beta2": 0.999
+    }
+}
