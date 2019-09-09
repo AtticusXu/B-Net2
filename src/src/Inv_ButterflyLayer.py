@@ -217,7 +217,7 @@ class InvButterflyLayer(tf.keras.layers.Layer):
         NG = int(self.channel_siz/4)
         ChebNodes = (np.cos(np.array(range(2*NG-1,0,-2))/2/NG*math.pi) +
                 1)/2
-        xNodes = np.arange(0,1,2.0/self.mid_filter_siz)
+        xNodes = np.arange(0,1,1.0/self.mid_filter_siz)
         xlen = (self.mid_range[1] - self.mid_range[0])/2**self.nlvl
         LMat = LagrangeMat(ChebNodes,xNodes)
         kcen = np.mean(self.out_range)
@@ -238,6 +238,7 @@ class InvButterflyLayer(tf.keras.layers.Layer):
                 name="Bias_de_In_str" )
         tf.summary.histogram("Filter_de_In_str", self.de_InFilterVar)
         tf.summary.histogram("Bias_de_In_str", self.de_InBiasVar)
+        
         #----------------
         # Setup en_ell layer weights
         ChebNodes = (np.cos(np.array(range(2*NG-1,0,-2))/2/NG*math.pi) +
@@ -399,6 +400,7 @@ class InvButterflyLayer(tf.keras.layers.Layer):
             xlen = self.mid_range[1] - self.mid_range[0]
             xoff = self.mid_range[0]
             xNodes = ChebNodes*xlen + xoff
+            
 
             for iti in range(0,NG):
                 for itj in range(0,self.out_filter_siz//2):

@@ -44,7 +44,7 @@ def gen_ede_uni_data(freqmag,freqidx,siz,sig):
     if N % 2 == 0:
         halfy = np.random.uniform(-np.sqrt(a/2),np.sqrt(a/2),[siz,N//2-1])
         realy = np.concatenate((consty,halfy,zeroy,halfy[:,::-1]),axis=1)
-        halfy = np.zeros([siz,N//2-1])
+        halfy = np.random.uniform(-np.sqrt(a/2),np.sqrt(a/2),[siz,N//2-1])
         imagy = np.concatenate((zeroy,halfy,zeroy,-halfy[:,::-1]),axis=1)
     else:
         halfy = np.random.uniform(-np.sqrt(a/2),np.sqrt(a/2),[siz,N//2])
@@ -55,8 +55,11 @@ def gen_ede_uni_data(freqmag,freqidx,siz,sig):
     realy = realy*freqmag
     imagy = imagy*freqmag
     y = realy + imagy*1j
-    xdata = np.reshape(np.fft.ifft(y,N,1).real,(siz,N,1),order='F')
-    y = np.reshape(np.fft.fft(xdata,N,1),(siz,1,N),order='F')
+    
+    realx = np.reshape(np.fft.ifft(y,N,1).real,(siz,1,N),order='F')
+    imagx = np.reshape(np.fft.ifft(y,N,1).imag,(siz,1,N),order='F')
+    xdata = np.reshape(np.concatenate((realx,imagx),axis=1),(siz,-1,1),order='F')
+    y = np.reshape(y,(siz,1,N),order='F')
     realy = y.real[:,:,freqidx]
     imagy = y.imag[:,:,freqidx]
     ydata = np.reshape(np.concatenate((realy,imagy),axis=1),(siz,-1,1),order='F')
