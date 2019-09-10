@@ -68,7 +68,41 @@ def gen_ede_uni_data(freqmag,freqidx,siz,sig):
     xdata = np.float32(xdata)
     ydata = np.float32(ydata)
     return xdata,ydata,xnorm,ynorm,y
-    
+
+def gen_energy_uni_data(freqmag,freqidx,K_,siz,sig):
+    N = len(freqmag)
+    K = len(freqidx)
+    a = 6*np.sqrt(math.pi)*sig/math.erf(K/sig)
+
+    freqmag = np.tile(np.reshape(freqmag,[1,N]),(siz,1))
+    consty = np.random.uniform(-np.sqrt(a),np.sqrt(a),[siz,1])
+    zeroy = np.zeros([siz,1])
+    if N % 2 == 0:
+        halfy = np.random.uniform(-np.sqrt(a/2),np.sqrt(a/2),[siz,N//2-1])
+        realy = np.concatenate((consty,halfy,zeroy,halfy[:,::-1]),axis=1)
+        halfy = np.random.uniform(-np.sqrt(a/2),np.sqrt(a/2),[siz,N//2-1])
+        imagy = np.concatenate((zeroy,halfy,zeroy,-halfy[:,::-1]),axis=1)
+    else:
+        halfy = np.random.uniform(-np.sqrt(a/2),np.sqrt(a/2),[siz,N//2])
+        realy = np.concatenate((consty,halfy,halfy[:,::-1]),axis=1)
+        halfy = np.random.uniform(-np.sqrt(a/2),np.sqrt(a/2),[siz,N//2])
+        imagy = np.concatenate((zeroy,halfy,-halfy[:,::-1]),axis=1)
+
+    realy = realy*freqmag
+    imagy = imagy*freqmag
+    y = realy + imagy*1j
+    xdata = np.reshape(np.fft.ifft(y,N,1).real,(siz,N,1),order='F')
+    y = np.reshape(np.fft.fft(xdata,N,1),(siz,1,N),order='F')
+    realy = y.real[:,:,freqidx]
+    imagy = y.imag[:,:,freqidx]
+    ydata = np.reshape(np.concatenate((realy,imagy),axis=1),(siz,-1,1),order='F')
+    ynorm = np.squeeze(np.linalg.norm(ydata,2,1))
+    K_ = np.reshape(K_,(-1,1))
+    edata = np.sum(np.absolute(np.multiply(ydata, K_))**2,axis=1)
+    xdata = np.float32(xdata)
+    ydata = np.float32(ydata)
+    return xdata,ydata,edata,ynorm
+ 
 def gen_2D_straight_data(siz_x,siz_y,siz_u,siz_v, N):
     
     xdata = np.zeros([N,siz_x,siz_y,1])
@@ -155,14 +189,17 @@ def gen_energy_data(N,siz):
     DW = np.fft.fftfreq(N)
     DW[DW==0] = np.inf
     DW = 1/DW
-    print(DW)
     tmp = np.random.normal(0,1,[siz,N//8])
     xdata = np.fft.irfft(np.fft.rfft(tmp,axis=1),N,1)
+    realh = np.reshape(np.fft.fft(xdata,axis=1).real,(siz,N),order='F')
+    imagh = np.reshape(np.fft.fft(xdata,axis=1).imag,(siz,N),order='F')
+    hdata = np.reshape(np.concatenate((realh,imagh),axis=1),(siz,-1,1),order='F')
     ydata = np.sum(np.absolute(np.multiply(
         np.fft.fft(xdata,axis=1), DW))**2,axis=1)/N**2
     xdata = np.float32(np.reshape(xdata,[siz,N,1]))
     ydata = np.float32(np.reshape(ydata,[siz,1,1]))
-    return xdata,ydata
+    DW = np.float32(DW)
+    return xdata,ydata,hdata,DW
 
 def gen_energy2d_data(N,siz):
     DW = np.fft.fftfreq(N)

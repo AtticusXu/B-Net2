@@ -89,32 +89,28 @@ def evaluate():
     sess = tf.Session()
     saver = tf.train.Saver()
     S=20
-    q = np.zeros((S+1,out_siz//2))
-    v = np.ndarray(shape=(4,S+1,in_siz),dtype='complex64')
+    q = np.zeros((S+1,out_siz))
+    v = np.empty((4,S+1,in_siz))
     x_test,y_test = gen_degree_data(in_siz,in_range,out_siz,out_range)
     for k in range(S+1):
         sess.run(init)
         if k!=S:
-            MODEL_SAVE_PATH = "train_model/"
+            MODEL_SAVE_PATH = "train_model_-223/"
             MODEL_NAME = "fft_"+str(prefixed)+"_"+str(k)+"_model"
             saver.restore(sess, MODEL_SAVE_PATH + MODEL_NAME+".ckpt")
         
         test_dict = {testInData: x_test, testOutData: y_test}
         y_output = sess.run(y_test_output,feed_dict=test_dict)
         
-        B_r=np.zeros([out_siz//2, in_siz])
-        B_i=np.zeros([out_siz//2, in_siz])
-        F_r=np.zeros([out_siz//2, in_siz])
-        F_i=np.zeros([out_siz//2, in_siz])
-        for i in range(0,out_siz//2):
+        B=np.zeros([out_siz, in_siz])
+
+        F=np.zeros([out_siz, in_siz])
+
+        for i in range(0,out_siz):
             for j in range(0,in_siz):
-                B_r[i][j] = y_output[j][2*i][0] 
-                B_i[i][j] = y_output[j][2*i+1][0]
-                F_r[i][j] = y_test[j][2*i][0]  
-                F_i[i][j] = y_test[j][2*i+1][0]
-        
-        B = B_r + B_i *1j
-        F = F_r + F_i *1j
+                B[i][j] = y_output[j][i][0] 
+                F[i][j] = y_test[j][i][0]
+
         R = F-B
         U, s, V = np.linalg.svd(R, full_matrices=True)
         q[k] = s
@@ -123,18 +119,25 @@ def evaluate():
 
     print(q)
 
-    va = np.mean(v[0,0:S],1)
-    #print(va)
-    u = np.fft.fft(va,in_siz,0)
+    va = np.mean(v[0,0:S],0)
+    vo = v[0,S]
+    print(np.mean(va))
+    print(np.mean(vo))
+    u = np.fft.fft(va,in_siz)
+    uo = np.fft.fft(vo,in_siz)
     #u_0 = np.fft.fft(v[0,S,:],in_siz,0)
     #print(u_0)
-    print(u)
     #vi = np.fft.ifft(va,in_siz,0)
-    #print(vi)
+    print(uo)
     e = np.sqrt(np.square(u.real)+np.square(u.imag))
+    eo = np.sqrt(np.square(uo.real)+np.square(uo.imag))
     qa = np.mean(q[0:S],0)
     print(e)
+    print(eo)
     print(qa)
+    print(q[S])
+    fig = plt.figure(0,figsize=(10,8))
+    plt.plot()
 def main(argv=None):
     tf.reset_default_graph()
     evaluate()
