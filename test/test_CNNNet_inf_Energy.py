@@ -26,9 +26,15 @@ in_range = np.float32([0,1])
 out_range = np.float32([0,out_siz//2])
 energy_calc_siz = paras['energyCalcSize']
 freqidx = range(out_siz//2)
-freqmag = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),
-                                       [7],[sig]))
-freqmag[N//2] = 0
+freqmag = np.zeros((5*out_siz//2-3,N))
+for i in range(5*out_siz//2-4):
+    freqmag[i] = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),
+                                       [i/5],[sig]))
+    freqmag[i,N//2] = 0
+for i in range(out_siz//2):  
+    freqmag[5*out_siz//2-4,i]=0.05
+    freqmag[5*out_siz//2-4,-i]=0.05
+
 K = np.zeros(out_siz)
 for i in range(out_siz//2):
     K[2*i] = 2**(-1-i)
@@ -140,7 +146,7 @@ sess.run(init)
 MODEL_SAVE_PATH = "train_model/"
 MODEL_NAME = "cnn_"+str(prefixed)+"_model"
 for it in range(max_iter):
-    rand_x,rand_h,rand_y,ynorm = gen_energy_uni_data(freqmag,freqidx,K,batch_siz,sig)
+    rand_x,rand_h,rand_y,ynorm = gen_energy_uni_data(freqmag[0],freqidx,K,batch_siz,sig)
 
     train_dict = {trainInData: rand_x, trainOutData: rand_y,
                   trainMidData: rand_h, trainNorm: ynorm}
