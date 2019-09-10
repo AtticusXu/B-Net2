@@ -82,7 +82,7 @@ def evaluate():
         in_range, out_range)
     
     y_test_output = butterfly_net(testInData)
-    y_test_output = butterfly_net(testInData)
+    #y_test_output = CNN_net(testInData)
     
     init = tf.global_variables_initializer()
     
@@ -95,7 +95,7 @@ def evaluate():
     for k in range(S+1):
         sess.run(init)
         if k!=S:
-            MODEL_SAVE_PATH = "train_model_-223/"
+            MODEL_SAVE_PATH = "train_model_a-1_3/"
             MODEL_NAME = "fft_"+str(prefixed)+"_"+str(k)+"_model"
             saver.restore(sess, MODEL_SAVE_PATH + MODEL_NAME+".ckpt")
         
@@ -136,8 +136,8 @@ def evaluate():
     print(eo)
     print(qa)
     print(q[S])
-    fig = plt.figure(0,figsize=(10,8))
-    plt.plot()
+    np.save('3_Kenergy',eo)
+    
 def main(argv=None):
     tf.reset_default_graph()
     evaluate()

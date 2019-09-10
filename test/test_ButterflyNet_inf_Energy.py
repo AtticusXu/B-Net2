@@ -144,7 +144,7 @@ print("Total Num Paras:  %6d" % ( np.sum( [np.prod(v.get_shape().as_list())
 saver = tf.train.Saver()
 sess.run(init)
 MODEL_SAVE_PATH = "train_model/"
-MODEL_NAME = "fft_"+str(prefixed)+"_model"
+MODEL_NAME = "fft_"+str(prefixed)+"_0_l_model"
 for it in range(max_iter):
     rand_x,rand_h,rand_y,ynorm = gen_energy_uni_data(freqmag[0],freqidx,K,batch_siz,sig)
 
