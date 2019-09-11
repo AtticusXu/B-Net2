@@ -34,7 +34,7 @@ out_range = np.float32([0,1])
 sig = paras['sigma']
 freqidx = range(en_mid_siz//2)
 freqmag = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),
-                                       [3],[0.1]))
+                                       [0],[0.1]))
 #freqmag = np.ones((N))￼
 freqmag[N//2] = 0
 

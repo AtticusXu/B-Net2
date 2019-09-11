@@ -14,7 +14,7 @@ tf.reset_default_graph()
 from gen_dft_data import gen_energy_uni_data
 from CNNLayer import CNNLayer
 from gaussianfun import gaussianfun
-
+tf.reset_default_graph()
 json_file = open('paras.json')
 paras = json.load(json_file)
 sig = 2
@@ -88,11 +88,6 @@ trainMidData = tf.placeholder(tf.float32, shape=(batch_siz,out_siz,1),
         name="trainMidData")
 trainNorm = tf.placeholder(tf.float32, shape=(batch_siz),
         name="trainNorm")
-testInData = tf.placeholder(tf.float32, shape=(1,in_siz,1),
-        name="testInData")
-testOutData = tf.placeholder(tf.float32, shape=(1,1,1),
-        name="testOutData")
-
 #=========================================================
 #----- Training Preparation
 CNN_net = CNNLayer(in_siz, out_siz,False,3,2,

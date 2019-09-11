@@ -87,10 +87,6 @@ trainMidData = tf.placeholder(tf.float32, shape=(batch_siz,out_siz,1),
         name="trainMidData")
 trainNorm = tf.placeholder(tf.float32, shape=(batch_siz),
         name="trainNorm")
-testInData = tf.placeholder(tf.float32, shape=(1,in_siz,1),
-        name="testInData")
-testOutData = tf.placeholder(tf.float32, shape=(1,1,1),
-        name="testOutData")
 
 #=========================================================
 #----- Training Preparation
