@@ -35,10 +35,13 @@ for i in range(out_siz//2):
     freqmag[5*out_siz//2-4,i]=0.05
     freqmag[5*out_siz//2-4,-i]=0.05
 
+DW = np.fft.fftfreq(N)
+DW[DW==0] = np.inf
+DW = 1/DW/N
 K = np.zeros(out_siz)
 for i in range(out_siz//2):
-    K[2*i] = 2**(-1-i)
-    K[2*i+1] = 2**(-1-i)
+    K[2*i] = DW[i]
+    K[2*i+1] = DW[i]
 print(K)
 #=========================================================
 #----- Parameters Setup
@@ -138,10 +141,10 @@ print("Total Num Paras:  %6d" % ( np.sum( [np.prod(v.get_shape().as_list())
 #----- Step by Step Training
 saver = tf.train.Saver()
 sess.run(init)
-MODEL_SAVE_PATH = "train_model/"
-MODEL_NAME = "cnn_"+str(prefixed)+"_0_l_model"
+MODEL_SAVE_PATH = "train_model_energy/"
+MODEL_NAME = "cnn_"+str(prefixed)+"_0_p_model"
 for it in range(max_iter):
-    rand_x,rand_h,rand_y,ynorm = gen_energy_uni_data(freqmag[0],freqidx,K,batch_siz,sig)
+    rand_x,rand_h,rand_y,ynorm = gen_energy_uni_data(freqmag[-1],freqidx,K,batch_siz,sig)
 
     train_dict = {trainInData: rand_x, trainOutData: rand_y,
                   trainMidData: rand_h, trainNorm: ynorm}

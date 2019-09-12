@@ -71,24 +71,29 @@ print("Out Range:       (%6.2f, %6.2f)" % (out_range[0], out_range[1]))
 
 
 def evaluate():
+    S=20
     testInData = tf.placeholder(tf.float32, shape=(in_siz,in_siz,1),
-                                name="trainInData")
+                                name="testInData")
     testOutData = tf.placeholder(tf.float32, shape=(in_siz,out_siz,1),
-                                 name="trainOutData")
-    #CNN_net = CNNLayer(in_siz, out_siz, False, klvl, alph,
-    #                   channel_siz, nlvl, prefixed)
-    butterfly_net = ButterflyLayer(in_siz, out_siz, False,
-        channel_siz, nlvl, prefixed,
-        in_range, out_range)
+                                 name="testOutData")
+    svdInData = tf.placeholder(tf.float32, shape=(S,in_siz,1),
+                                name="testInData")
+    svdOutData = tf.placeholder(tf.float32, shape=(S,out_siz,1),
+                                 name="testOutData")
+    CNN_net = CNNLayer(in_siz, out_siz, False, klvl, alph,
+                       channel_siz, nlvl, prefixed)
+    #butterfly_net = ButterflyLayer(in_siz, out_siz, False,
+    #    channel_siz, nlvl, prefixed,
+    #    in_range, out_range)
     
-    y_test_output = butterfly_net(testInData)
+    y_test_output = CNN_net(testInData)
     #y_test_output = CNN_net(testInData)
-    
+    y_svd_output = CNN_net(svdInData)
     init = tf.global_variables_initializer()
     
     sess = tf.Session()
     saver = tf.train.Saver()
-    S=20
+    
     q = np.zeros((S+1,out_siz))
     v = np.empty((4,S+1,in_siz))
     x_test,y_test = gen_degree_data(in_siz,in_range,out_siz,out_range)
@@ -96,7 +101,7 @@ def evaluate():
         sess.run(init)
         if k!=S:
             MODEL_SAVE_PATH = "train_model_a-1_3/"
-            MODEL_NAME = "fft_"+str(prefixed)+"_"+str(k)+"_model"
+            MODEL_NAME = "cnn_"+str(prefixed)+"_"+str(k)+"_model"
             saver.restore(sess, MODEL_SAVE_PATH + MODEL_NAME+".ckpt")
         
         test_dict = {testInData: x_test, testOutData: y_test}
@@ -116,27 +121,37 @@ def evaluate():
         q[k] = s
         for i in range(4):
             v[i,k] = V[:,i]
-
+            
     print(q)
-
-    va = np.mean(v[0,0:S],0)
-    vo = v[0,S]
-    print(np.mean(va))
-    print(np.mean(vo))
-    u = np.fft.fft(va,in_siz)
-    uo = np.fft.fft(vo,in_siz)
+    x_svd = np.reshape(v[0,0:S],(S,in_siz,1))
+    F_svd = np.empty((S,out_siz, in_siz))
+    for s in range(S):
+        F_svd[s] = F
+    y_svd = np.matmul(F_svd,x_svd)
+    print(x_svd.shape)
+    svd_dict = {svdInData: x_svd, svdOutData: y_svd}
+    svd_output = sess.run(y_svd_output,feed_dict=svd_dict)
+    r_svd = np.reshape(svd_output-y_svd,(S,out_siz)) 
+    r_norm = np.linalg.norm(r_svd, 2, axis=1)
+    print(np.mean(r_norm))
+    #va = np.mean(v[0,0:S],0)
+    #vo = v[0,S]
+    #print(np.mean(va))
+    #print(np.mean(vo))
+    #u = np.fft.fft(va,in_siz)
+    #uo = np.fft.fft(vo,in_siz)
     #u_0 = np.fft.fft(v[0,S,:],in_siz,0)
     #print(u_0)
     #vi = np.fft.ifft(va,in_siz,0)
-    print(uo)
-    e = np.sqrt(np.square(u.real)+np.square(u.imag))
-    eo = np.sqrt(np.square(uo.real)+np.square(uo.imag))
-    qa = np.mean(q[0:S],0)
-    print(e)
-    print(eo)
-    print(qa)
-    print(q[S])
-    np.save('3_Kenergy',eo)
+    #print(uo)
+    #e = np.sqrt(np.square(u.real)+np.square(u.imag))
+    #eo = np.sqrt(np.square(uo.real)+np.square(uo.imag))
+    #qa = np.mean(q[0:S],0)
+    #print(e)
+    #print(eo)
+    #print(qa)
+    #print(q[S])
+    #np.save('3_Kenergy',eo)
     
 def main(argv=None):
     tf.reset_default_graph()
