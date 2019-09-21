@@ -39,8 +39,8 @@ for i in range(out_siz//2):
     freqmag[5*out_siz//2-4,-i]=0.05
 K = np.zeros(out_siz)
 for i in range(out_siz//2):
-    K[2*i] = 2**(-1-i)
-    K[2*i+1] = 2**(-1-i)
+    K[-2*i-2] = 2**(-1-i)
+    K[-2*i-1] = 2**(-1-i)
 print(K)
 
 #=========================================================
@@ -94,14 +94,13 @@ testNorm = tf.placeholder(tf.float32, shape=(batch_siz),
 
 #=========================================================
 #----- Training Preparation
-butterfly_net = ButterflyLayer(in_siz, out_siz,False,
-        channel_siz, nlvl, prefixed,
-        in_range, out_range)
+#butterfly_net = ButterflyLayer(in_siz, out_siz,False,
+#        channel_siz, nlvl, prefixed,in_range, out_range)
 
-#CNN_net = CNNLayer(in_siz, out_siz,False,3,2,
-#        channel_siz, nlvl, prefixed)
+CNN_net = CNNLayer(in_siz, out_siz,False,3,2,
+        channel_siz, nlvl, prefixed)
 
-mid_output = butterfly_net(testInData)
+mid_output = CNN_net(testInData)
 if energy_calc_siz == 'sqr':
     if prefixed:
         denseVec = tf.Variable(np.float32(K))
@@ -142,12 +141,12 @@ print("Total Num Paras:  %6d" % ( np.sum( [np.prod(v.get_shape().as_list())
 saver = tf.train.Saver()
 sess.run(init)
 MODEL_SAVE_PATH = "train_model_energy/"
-MODEL_NAME = "fft_"+str(prefixed)+"_-1_l_model"
+MODEL_NAME = "cnn_"+str(prefixed)+"_-1_h_model"
 mk_test_loss_l2_list = np.zeros((5*out_siz//2-3))
 mk_non_loss_l2_list = np.zeros((5*out_siz//2-3))
 #for j in range(5*out_siz//2-3):
 #    rand_x,rand_h,rand_y,ynorm = gen_energy_uni_data(
-#            freqmag[0],freqidx,K,batch_siz,sig)
+#            freqmag[j],freqidx,K,batch_siz,sig)
 #
 #    train_dict = {testInData: rand_x, testOutData: rand_y,
 #                  testMidData: rand_h, testNorm: ynorm}
@@ -159,15 +158,15 @@ mk_non_loss_l2_list = np.zeros((5*out_siz//2-3))
 saver.restore(sess, MODEL_SAVE_PATH + MODEL_NAME+".ckpt")
 for j in range(5*out_siz//2-3):
     rand_x,rand_h,rand_y,ynorm = gen_energy_uni_data(
-            freqmag[0],freqidx,K,batch_siz,sig)
+            freqmag[j],freqidx,K,batch_siz,sig)
 
     train_dict = {testInData: rand_x, testOutData: rand_y,
-                  testMidData: rand_h, testNorm: ynorm}
+                 testMidData: rand_h, testNorm: ynorm}
     [temp_test_loss,temp_mid,mid] = sess.run(
              [L2_loss_test,L2_loss_mid,mid_output],feed_dict=train_dict)
     mk_test_loss_l2_list[j] = temp_test_loss
 
-print(mk_test_loss_l2_list)   
+print(mk_test_loss_l2_list)
 np.save('train_model_energy/'+MODEL_NAME+'_mk_test_loss_list', 
             mk_test_loss_l2_list)
     

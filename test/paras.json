@@ -10,7 +10,7 @@
     "Ntest": 16384,
     "prefixed": false,
     "batchSize": 256,
-    "channelSize": 8,
+    "channelSize": 32,
     "maxIter": 10000,
     "reportFreq": 10,
     "recordFreq": 100,

@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import json
 tf.reset_default_graph() 
 from gaussianfun import gaussianfun
-from gen_dft_data import gen_ede_uni_data
+from gen_dft_data import gen_ede_Ell_data
 from Bi_ButterflyLayer import ButterflyLayer
 from middle_layer import MiddleLayer
 
@@ -22,11 +22,11 @@ from middle_layer import MiddleLayer
 json_file = open('paras.json')
 paras = json.load(json_file)
 
-N = 32
-in_siz = 64
-en_mid_siz = 16
+N = 64
+in_siz = 128
+en_mid_siz = 32
 de_mid_siz = min(in_siz,en_mid_siz*2)
-out_siz = 64
+out_siz = 128
 in_range = np.float32([0,1])
 en_mid_range = np.float32([0,en_mid_siz/in_siz])
 de_mid_range = np.float32([-0.25,0.25])
@@ -34,10 +34,16 @@ out_range = np.float32([0,1])
 sig = paras['sigma']
 freqidx = range(en_mid_siz//2)
 freqmag = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),
-                                       [0],[0.1]))
+                                       [1],[0.1]))
 #freqmag = np.ones((N))￼
 freqmag[N//2] = 0
-
+m = np.floor(np.sqrt(N))//2
+a = np.ones(N+1)
+for i in range(N+1):
+    if i%(2*m) < m:
+        #a[i] = 10
+        a[i] = 1
+print(a)
 #=========================================================
 #----- Parameters Setup
 
@@ -47,6 +53,7 @@ channel_siz = 12 # Num of interp pts on each dim
 
 
 batch_siz = paras['batchSize'] # Batch size during traning
+
 
 
 adam_learning_rate = paras['ADAMparas']['learningRate']
@@ -87,13 +94,15 @@ sess = tf.Session()
 trainInData = tf.placeholder(tf.float32, shape=(batch_siz,in_siz,1),
         name="trainInData")
 trainMidData = tf.placeholder(tf.float32, shape=(batch_siz,en_mid_siz,1),
-        name="trainInData")
+        name="trainMidData")
 trainOutData = tf.placeholder(tf.float32, shape=(batch_siz,out_siz,1),
         name="trainOutData")
 trainInNorm = tf.placeholder(tf.float32, shape=(batch_siz),
-        name="trainNorm")
+        name="trainInNorm")
 trainMidNorm = tf.placeholder(tf.float32, shape=(batch_siz),
-        name="trainNorm")
+        name="trainMidNorm")
+trainOutNorm = tf.placeholder(tf.float32, shape=(batch_siz),
+        name="trainOutNorm")
 
 global_steps=tf.Variable(0, trainable=False)
 #=========================================================
@@ -102,7 +111,7 @@ en_butterfly_net = ButterflyLayer(N, in_siz, en_mid_siz, False,
         channel_siz, en_nlvl, -1, prefixed,
         in_range, en_mid_range)
 
-middle_layer = MiddleLayer(in_siz, en_mid_siz, prefixed = 1, std = 0.35)
+middle_layer = MiddleLayer(in_siz, en_mid_siz,a, prefixed = 2, std = 0.35)
 
 de_butterfly_net = ButterflyLayer(N, de_mid_siz, out_siz,False,
             channel_siz , de_nlvl, 1, prefixed,
@@ -148,9 +157,11 @@ sess.run(init)
 err_list = np.zeros((max_iter//record_freq,2))
 epochs = np.linspace(0,max_iter,max_iter//record_freq)
 for it in range(max_iter):
-    x_train,y_train,x_norm,y_norm,y = gen_ede_uni_data(freqmag,freqidx,batch_siz,sig)
-    train_dict = {trainInData: x_train,trainMidData: y_train, trainOutData: x_train,
-                  trainInNorm: x_norm,trainMidNorm: y_norm}
+    f_train,y_train,u_train,f_norm,y_norm,u_norm = gen_ede_Ell_data(
+            batch_siz,freqidx,freqmag,a)
+    train_dict = {trainInData: f_train,trainMidData: y_train,
+                  trainOutData: u_train,trainInNorm: f_norm,
+                  trainMidNorm: y_norm,trainOutNorm: u_norm}
     if it % report_freq == 0:
         [ytrain,y_loss,f_loss] = sess.run(
             [y_train_output,L2_loss_train_y,L2_loss_train_f], feed_dict=train_dict)

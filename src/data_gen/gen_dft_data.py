@@ -1,5 +1,7 @@
 import numpy as np
 import math
+from ODE_matrix import InvElliptic
+from scipy import fftpack
 def gen_uni_data(freqmag,freqidx,siz,sig):
     N = len(freqmag)
     K = len(freqidx)
@@ -69,6 +71,95 @@ def gen_ede_uni_data(freqmag,freqidx,siz,sig):
     ydata = np.float32(ydata)
     return xdata,ydata,xnorm,ynorm,y
 
+def gen_ede_Ell_data(siz, freqidx, freqmag, a):
+    
+    #f_r = np.random.uniform(-np.sqrt(3/N),np.sqrt(3/N),[batch_siz,N,1])
+    #f_i = np.zeros_like(f_r)
+    #f = np.reshape(np.concatenate((f_r,f_i),axis=2),(batch_siz,-1,1),order='C')
+    #print(f[0,:,0])
+    N = len(freqmag)
+    K = len(freqidx)
+    l = N
+    
+    freqmag = np.tile(np.reshape(freqmag,[1,N]),(siz,1))
+    #y = np.random.uniform(-np.sqrt(l),np.sqrt(l),[siz,N])
+    y = np.ones([siz,N])
+    y = y*freqmag
+    #print("y")
+    #print(y[0,:])
+    zerof = np.zeros([siz,1])
+    f = np.concatenate((zerof,fftpack.dst(y[:,1:],1,N-1,axis = 1)),axis=1)/2/N
+    f = np.reshape(f,(siz,N,1))
+    fdata_r = np.concatenate((f,np.zeros([siz,1,1]),-f[:,-1:0:-1]),axis=1)
+    fdata_i = np.zeros_like(fdata_r)
+    fdata = np.reshape(np.concatenate((fdata_r,fdata_i),axis = 2),(siz,-1,1))
+    print("f")
+    print(fdata[0,:,0])
+    ydata_r = np.concatenate((zerof,fftpack.dst(f[:,1:,0],1,N-1,axis = 1)),axis=1)
+    ydata_r = np.reshape(ydata_r[:,freqidx],(siz,K,1))
+    ydata_i = np.zeros_like(ydata_r)
+    ydata = np.reshape(np.concatenate((ydata_r,ydata_i),axis = 2),(siz,-1,1))
+    print("ydata")
+    print(ydata[0,:,0])
+    ynorm = np.squeeze(np.linalg.norm(ydata,2,1))
+    
+    u = np.zeros((siz,N,1))
+    mat = InvElliptic(a,N)
+    mat = np.tile(mat,(siz,1,1))
+
+    u[:,1:] = np.matmul(mat, f[:,1:])
+    
+    #print("u")
+    #print(u[0,:,0])
+    fnorm = np.squeeze(np.linalg.norm(f,2,1))
+    unorm = np.squeeze(np.linalg.norm(u,2,1))
+    fdata = np.float32(fdata)
+    udata = np.float32(u)
+    ydata = np.float32(ydata)
+    return fdata, ydata, udata, fnorm, ynorm, unorm
+
+
+def gen_ede_Ell_sine_data(siz, freqidx, freqmag, a):
+    
+    #f_r = np.random.uniform(-np.sqrt(3/N),np.sqrt(3/N),[batch_siz,N,1])
+    #f_i = np.zeros_like(f_r)
+    #f = np.reshape(np.concatenate((f_r,f_i),axis=2),(batch_siz,-1,1),order='C')
+    #print(f[0,:,0])
+    N = len(freqmag)
+    K = len(freqidx)
+    l = N
+    
+    freqmag = np.tile(np.reshape(freqmag,[1,N]),(siz,1))
+    #y = np.random.uniform(-np.sqrt(l),np.sqrt(l),[siz,N])
+    y = np.ones([siz,N])
+    y = y*freqmag
+    #print("y")
+    #print(y[0,:])
+    zerof = np.zeros([siz,1])
+    f = np.concatenate((zerof,fftpack.dst(y[:,1:],1,N-1,axis = 1)),axis=1)/2/N
+    f = np.reshape(f,(siz,N,1))
+    print("f")
+    print(f[0,:,0])
+    ydata = np.concatenate((zerof,fftpack.dst(f[:,1:,0],1,N-1,axis = 1)),axis=1)
+    ydata = np.reshape(ydata[:,freqidx],(siz,K,1))
+    print("ydata")
+    print(ydata[0,:,0])
+    ynorm = np.squeeze(np.linalg.norm(ydata,2,1))
+    
+    u = np.zeros((siz,N,1))
+    mat = InvElliptic(a,N)
+    mat = np.tile(mat,(siz,1,1))
+
+    u[:,1:] = np.matmul(mat, f[:,1:])
+    #print("u")
+    #print(u[0,:,0])
+    fnorm = np.squeeze(np.linalg.norm(f,2,1))
+    unorm = np.squeeze(np.linalg.norm(u,2,1))
+    fdata = np.float32(f)
+    udata = np.float32(u)
+    ydata = np.float32(ydata)
+    return fdata, ydata, udata, fnorm, ynorm, unorm    
+    
 def gen_energy_uni_data(freqmag,freqidx,K_,siz,sig):
     N = len(freqmag)
     K = len(freqidx)
