@@ -9,7 +9,7 @@
     "alpha" : 2,
     "Ntest": 16384,
     "prefixed": false,
-    "batchSize": 16,
+    "batchSize": 40,
     "channelSize": 16,
     "maxIter": 10000,
     "reportFreq": 10,

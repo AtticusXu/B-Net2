@@ -111,16 +111,30 @@ print("Total Num Paras:  %6d" % ( np.sum( [np.prod(v.get_shape().as_list())
     for v in tf.trainable_variables()]) ))
     
 sess.run(init)
+f_train = np.load('tftmp/fft_4000_f_train_c.npy')
+y_train = np.load('tftmp/fft_4000_y_train_c.npy')
+u_train = np.load('tftmp/fft_4000_u_train_c.npy')
+f_norm = np.load('tftmp/fft_4000_f_norm_c.npy')
+y_norm = np.load('tftmp/fft_4000_y_norm_c.npy')
+u_norm = np.load('tftmp/fft_4000_u_norm_c.npy')
 for it in range(max_iter):
-    f_train,y_train,u_train,f_norm,y_norm,u_norm = gen_ede_Ell_data(
-            batch_siz,freqidx,freqmag,a)
-    train_dict = {trainInData: f_train, trainMidData: y_train,trainMidNorm: y_norm,
-                  trainOutData:u_train, trainOutNorm: u_norm}
+    start = (it*batch_siz)%4000
+    end = ((it+1)*batch_siz-1)%4000+1
+    f_train_it = f_train[start:end]
+    y_train_it = y_train[start:end]
+    u_train_it = u_train[start:end]
+    f_norm_it = f_norm[start:end]
+    y_norm_it = y_norm[start:end]
+    u_norm_it = u_norm[start:end]
+    train_dict = {trainInData: f_train_it, trainMidData: y_train_it,
+                  trainMidNorm: y_norm_it,
+                  trainOutData:u_train_it, trainOutNorm: u_norm_it}
     if it % 1 == 0:
             [y,y_L2_loss,y_loss,u_L2_loss,u_loss] = sess.run(
                     [y_train_en_mid,L2_loss_train_y,MSE_loss_train_y,L2_loss_train_u,MSE_loss_train_u],
                     feed_dict=train_dict)
             #print(y[0,:,0])
+            print(it)
             print('y_mse:%10e,y_l2:%10e'%(y_loss, y_L2_loss))
             print('u_mse:%10e,u_l2:%10e'%(u_loss, u_L2_loss))
 
