@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from ODE_matrix import InvElliptic
+from ODE_matrix import InvElliptic, Inv_5_Elliptic
 from scipy import fftpack
 def gen_uni_data(freqmag,freqidx,siz,sig):
     N = len(freqmag)
@@ -71,48 +71,53 @@ def gen_ede_uni_data(freqmag,freqidx,siz,sig):
     ydata = np.float32(ydata)
     return xdata,ydata,xnorm,ynorm,y
 
-def gen_ede_Ell_data(siz, freqidx, freqmag, a):
+def gen_ede_Ell_data(siz, freqidx, freqmag, a_0):
     
     #f_r = np.random.uniform(-np.sqrt(3/N),np.sqrt(3/N),[batch_siz,N,1])
     #f_i = np.zeros_like(f_r)
     #f = np.reshape(np.concatenate((f_r,f_i),axis=2),(batch_siz,-1,1),order='C')
     #print(f[0,:,0])
     N = len(freqmag)
+    N_0 = 2**10
     K = len(freqidx)
     l = N
     
     freqmag = np.tile(np.reshape(freqmag,[1,N]),(siz,1))
-    #y = np.random.uniform(-np.sqrt(l),np.sqrt(l),[siz,N])
-    y = np.ones([siz,N])
-    y = y*freqmag
+    y = np.random.uniform(-np.sqrt(l),np.sqrt(l),[siz,N])
+    #y = np.ones([siz,N])
+    y = y*freqmag*N
     #print("y")
     #print(y[0,:])
     zerof = np.zeros([siz,1])
-    f = np.concatenate((zerof,fftpack.dst(y[:,1:],1,N-1,axis = 1)),axis=1)/2/N
-    f = np.reshape(f,(siz,N,1))
+    f = np.concatenate((zerof,fftpack.dst(y[:,1:],1,N_0-1,axis = 1)),axis=1)/2/N
+    #f = np.concatenate((zerof,np.random.uniform(-np.sqrt(l),np.sqrt(l),[siz,N_0-1])),axis=1)
+    f_0 = np.reshape(f,(siz,N_0,1))
+    f = f_0[:,0::N_0//N,:]
     fdata_r = np.concatenate((f,np.zeros([siz,1,1]),-f[:,-1:0:-1]),axis=1)
     fdata_i = np.zeros_like(fdata_r)
     fdata = np.reshape(np.concatenate((fdata_r,fdata_i),axis = 2),(siz,-1,1))
-    print("f")
-    print(fdata[0,:,0])
+    #print("f")
+    #print(fdata[0,:,0])
     ydata_r = np.concatenate((zerof,fftpack.dst(f[:,1:,0],1,N-1,axis = 1)),axis=1)
     ydata_r = np.reshape(ydata_r[:,freqidx],(siz,K,1))
     ydata_i = np.zeros_like(ydata_r)
     ydata = np.reshape(np.concatenate((ydata_r,ydata_i),axis = 2),(siz,-1,1))
-    print("ydata")
-    print(ydata[0,:,0])
+    #print("ydata")
+    #print(ydata[0,:,0])
     ynorm = np.squeeze(np.linalg.norm(ydata,2,1))
     
-    u = np.zeros((siz,N,1))
-    mat = InvElliptic(a,N)
+    u_0 = np.zeros((siz,N_0,1))
+    mat = Inv_5_Elliptic(a_0,N_0)
+    #print(mat.shape)
     mat = np.tile(mat,(siz,1,1))
 
-    u[:,1:] = np.matmul(mat, f[:,1:])
-    
+    u_0[:,1:,:] = np.matmul(mat, f_0[:,1:])
+    u = u_0[:,::N_0//N,:]
     #print("u")
     #print(u[0,:,0])
     fnorm = np.squeeze(np.linalg.norm(f,2,1))
     unorm = np.squeeze(np.linalg.norm(u,2,1))
+    #print(np.mean(unorm))
     fdata = np.float32(fdata)
     udata = np.float32(u)
     ydata = np.float32(ydata)
