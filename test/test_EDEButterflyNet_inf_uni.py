@@ -54,7 +54,7 @@ test_batch_siz = paras['Ntest']
 
 
 f_train,y_train,u_train,f_norm,y_norm,u_norm = gen_ede_Ell_data(
-            400,freqidx,freqmag,a)
+            4096,freqidx,freqmag,a)
 np.save('tftmp/fft_4000_f_train_c', f_train)
 np.save('tftmp/fft_4000_y_train_c', y_train)
 np.save('tftmp/fft_4000_u_train_c', u_train)

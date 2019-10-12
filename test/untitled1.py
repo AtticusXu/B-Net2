@@ -119,8 +119,8 @@ f_norm = np.load('tftmp/fft_4000_f_norm_c.npy')
 y_norm = np.load('tftmp/fft_4000_y_norm_c.npy')
 u_norm = np.load('tftmp/fft_4000_u_norm_c.npy')
 for it in range(max_iter):
-    start = (it*batch_siz)%400
-    end = ((it+1)*batch_siz-1)%400+1
+    start = (it*batch_siz)%4096
+    end = ((it+1)*batch_siz-1)%4096+1
     f_train_it = f_train[start:end]
     y_train_it = y_train[start:end]
     u_train_it = u_train[start:end]
