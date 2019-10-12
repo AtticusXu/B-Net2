@@ -58,15 +58,31 @@ class MiddleLayer(tf.keras.layers.Layer):
             de_mid_data = tf.reshape(de_mid_data,(np.size(in_data,0),de_mid_siz,1))
             return(de_mid_data)
         elif sine:
-            de_mid_data_i = np.reshape([], (0, en_mid_siz//2,1))
+            #de_mid_data_id = np.reshape([], (0, en_mid_siz//2,1))
+            #for i in range(np.size(in_data,0)):
+            #    tmpVar = en_mid_data[i]
+            #    tmpVar = -tf.matmul(self.mid_DenseVar,tmpVar)
+            #    tmpVar = tf.reshape(tmpVar,(1,de_mid_siz//2,1))
+            #    de_mid_data_id = tf.concat([de_mid_data_id, tmpVar], axis=0)
+            #de_mid_data_r = np.zeros((np.size(in_data,0),de_mid_siz//2,1))
+            #de_mid_data = tf.reshape(tf.concat((de_mid_data_r,de_mid_data_id),2),
+            #                         (np.size(in_data,0), en_mid_siz, 1))
+            #return(de_mid_data,de_mid_data_i0[0])
+            de_mid_data_r = np.reshape([], (0, en_mid_siz))
             for i in range(np.size(in_data,0)):
                 tmpVar = en_mid_data[i]
-                tmpVar = -tf.matmul(self.mid_DenseVar,tmpVar)
-                tmpVar = tf.reshape(tmpVar,(1,de_mid_siz//2,1))
-                de_mid_data_i = tf.concat([de_mid_data_i, tmpVar], axis=0)
-            de_mid_data_r = np.zeros((np.size(in_data,0),de_mid_siz//2,1))
+                tmpVar = -tf.matmul(self.mid_DenseVar_relu,tmpVar)
+                tmpVar = tf.reshape(tmpVar,(1,de_mid_siz))
+                de_mid_data_r = tf.concat([de_mid_data_r, tmpVar], axis=0)
+            de_mid_data_r = tf.nn.relu(tf.nn.bias_add(de_mid_data_r, self.mid_Bias))
+
+            de_mid_data_r = tf.add(-de_mid_data_r[:,de_mid_siz//2:],
+                                   de_mid_data_r[:,:de_mid_siz//2])
+            de_mid_data_r = tf.reshape(de_mid_data_r,
+                                       (np.size(in_data,0), de_mid_siz//2, 1))
+            de_mid_data_i = np.zeros((np.size(in_data,0),de_mid_siz//2,1))
             de_mid_data = tf.reshape(tf.concat((de_mid_data_r,de_mid_data_i),2),
-                                     (np.size(in_data,0), en_mid_siz, 1))
+                                     (np.size(in_data,0), de_mid_siz, 1))
             return(de_mid_data)
         else:
             en_mid_data = tf.reshape(en_mid_data,
@@ -124,7 +140,7 @@ class MiddleLayer(tf.keras.layers.Layer):
         #print(mat)
         #mat =np.linalg.inv(mat)
         self.mid_DenseVar = tf.Variable(mat.astype(np.float32),
-                                        name = "Dense_mid_Win")
+                                        name = "Dense_mid_ran")
         tf.summary.histogram("Dense_mid_ran", self.mid_DenseVar)
     
     def buildSineInverse(self):
@@ -132,7 +148,17 @@ class MiddleLayer(tf.keras.layers.Layer):
         N = en_mid_siz//2
         a = self.a
         mat = Inv_net_SineElliptic(a,N)
-        self.mid_DenseVar = tf.Variable(mat.astype(np.float32),
-                                        name = "Dense_mid_Win")
+
+        mat_relu = np.empty((2*N,N))
+        mat_relu[:N,:] = mat
+        mat_relu[N:,:] = -mat
+        #print(mat_relu[:,2])
+        b_relu = np.zeros(2*N)
+        self.mid_DenseVar_relu = tf.Variable(mat_relu.astype(np.float32),
+                                        name = "Dense_mid_str")
+        #self.mid_DenseVar= tf.Variable(mat.astype(np.float32),
+        #                                name = "Dense_mid_str")
+        self.mid_Bias = tf.Variable(b_relu.astype(np.float32),
+                                        name = "Bias_mid_str")
         
         

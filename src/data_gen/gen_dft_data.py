@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from ODE_matrix import InvElliptic, Inv_5_Elliptic
+from ODE_matrix import InvElliptic, Inv_5_Elliptic, InvSineElliptic
 from scipy import fftpack
 def gen_uni_data(freqmag,freqidx,siz,sig):
     N = len(freqmag)
@@ -102,12 +102,12 @@ def gen_ede_Ell_data(siz, freqidx, freqmag, a_0):
     ydata_r = np.reshape(ydata_r[:,freqidx],(siz,K,1))
     ydata_i = np.zeros_like(ydata_r)
     ydata = np.reshape(np.concatenate((ydata_r,ydata_i),axis = 2),(siz,-1,1))
-    #print("ydata")
-    #print(ydata[0,:,0])
+    print("ydata")
+    print(ydata[0,:,0])
     ynorm = np.squeeze(np.linalg.norm(ydata,2,1))
     
     u_0 = np.zeros((siz,N_0,1))
-    mat = Inv_5_Elliptic(a_0,N_0)
+    mat = InvSineElliptic(a_0,N_0)
     #print(mat.shape)
     mat = np.tile(mat,(siz,1,1))
 
