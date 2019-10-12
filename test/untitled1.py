@@ -34,7 +34,8 @@ freqidx = range(en_mid_siz//2)
 #freqmag = np.fft.ifftshift(gaussianfun(np.arange(-N//2,N//2),
 #                                       [1],[0.1]))
 freqmag = np.zeros(N)
-freqmag[1] = 1
+for i in range(1,8):
+    freqmag[i] = 1
 freqmag[N//2] = 0
 N_0 = 2**10
 a = np.ones(N_0+1)
@@ -54,7 +55,7 @@ test_batch_siz = paras['Ntest']
 report_freq = paras['reportFreq'] # Frequency of reporting
 record_freq = paras['recordFreq'] # Frequency of recording
 en_nlvl = 4
-de_nlvl = 5
+de_nlvl = 4
 
 #=========================================================
 #----- Variable Preparation
