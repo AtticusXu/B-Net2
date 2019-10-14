@@ -48,13 +48,12 @@ adam_learning_rate = paras['ADAMparas']['learningRate']
 adam_learning_rate_decay = paras['ADAMparas']['learningRatedecay']
 adam_beta1 = paras['ADAMparas']['beta1']
 adam_beta2 = paras['ADAMparas']['beta2']
-
 max_iter = paras['maxIter'] # Maximum num of iterations
 test_batch_siz = paras['Ntest']
-
+trainset =  paras['trainset']
 
 f_train,y_train,u_train,f_norm,y_norm,u_norm = gen_ede_Ell_data(
-            4096,freqidx,freqmag,a)
+            trainset,freqidx,freqmag,a)
 np.save('tftmp/fft_4000_f_train_c', f_train)
 np.save('tftmp/fft_4000_y_train_c', y_train)
 np.save('tftmp/fft_4000_u_train_c', u_train)

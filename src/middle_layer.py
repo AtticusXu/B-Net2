@@ -98,11 +98,14 @@ class MiddleLayer(tf.keras.layers.Layer):
         
     def buildrandom(self):
         std = self.std
+        en_mid_siz = self.en_mid_siz
         de_mid_siz = self.de_mid_siz
         # Mid Layer
-        self.mid_DenseVar = tf.Variable(tf.random_normal(
-                [de_mid_siz,de_mid_siz],0,std),name = "Dense_mid_ran")
-        tf.summary.histogram("Dense_mid_ran", self.mid_DenseVar)
+        self.mid_DenseVar_relu = tf.Variable(tf.random_normal(
+                [de_mid_siz,en_mid_siz//2],0,std),name = "Dense_mid_ran")
+        self.mid_Bias = tf.Variable(tf.zeros([de_mid_siz]),
+                                        name = "Bias_mid_str")
+
         
     def buildidentity(self):
         de_mid_siz = self.de_mid_siz

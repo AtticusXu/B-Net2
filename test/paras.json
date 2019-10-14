@@ -9,13 +9,14 @@
     "alpha" : 2,
     "Ntest": 16384,
     "prefixed": false,
-    "batchSize": 128,
+    "batchSize": 40,
     "channelSize": 12,
+    "trainset": 4096,
     "maxIter": 10000,
     "reportFreq": 10,
     "recordFreq": 100,
     "ADAMparas": {
-        "learningRate": 1.0e-05,
+        "learningRate": 1.0e-02,
         "learningRatedecay": 0.98,
         "beta1": 0.9,
         "beta2": 0.999

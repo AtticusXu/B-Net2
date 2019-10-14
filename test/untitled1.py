@@ -20,6 +20,7 @@ from middle_layer import MiddleLayer
 json_file = open('paras.json')
 paras = json.load(json_file)
 input_size = paras['inputSize']
+prefixed = paras['prefixed']
 N = input_size//2
 in_siz = input_size*2
 en_mid_siz = 16
@@ -54,6 +55,7 @@ max_iter = paras['maxIter'] # Maximum num of iterations
 test_batch_siz = paras['Ntest']
 report_freq = paras['reportFreq'] # Frequency of reporting
 record_freq = paras['recordFreq'] # Frequency of recording
+trainset =  paras['trainset']
 en_nlvl = 4
 de_nlvl = 4
 
@@ -75,12 +77,12 @@ global_steps=tf.Variable(0, trainable=False)
 #=========================================================
 #----- Training Preparation
 en_butterfly_net = ButterflyLayer(2*N, in_siz, en_mid_siz, False,
-        channel_siz, en_nlvl, -1, True,
+        channel_siz, en_nlvl, -1, prefixed,
         in_range, en_mid_range)
 middle_net = MiddleLayer(in_siz, en_mid_siz, de_mid_siz, a[::(2**10//N)],
-                                    sine = True, prefixed = 2, std = 0.5)
+                                    sine = True, prefixed = 0, std = 0.03)
 de_butterfly_net = ButterflyLayer(N, de_mid_siz, out_siz, False,
-        channel_siz, de_nlvl, 1, True,
+        channel_siz, de_nlvl, 1, prefixed,
         de_mid_range, out_range)
 
 y_train_en_mid = en_butterfly_net(trainInData)
@@ -119,8 +121,8 @@ f_norm = np.load('tftmp/fft_4000_f_norm_c.npy')
 y_norm = np.load('tftmp/fft_4000_y_norm_c.npy')
 u_norm = np.load('tftmp/fft_4000_u_norm_c.npy')
 for it in range(max_iter):
-    start = (it*batch_siz)%4096
-    end = ((it+1)*batch_siz-1)%4096+1
+    start = (it*batch_siz)%trainset
+    end = ((it+1)*batch_siz-1)%trainset+1
     f_train_it = f_train[start:end]
     y_train_it = y_train[start:end]
     u_train_it = u_train[start:end]
