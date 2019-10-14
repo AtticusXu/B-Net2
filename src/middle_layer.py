@@ -7,12 +7,13 @@ from ODE_matrix import Inv_net_SineElliptic
 class MiddleLayer(tf.keras.layers.Layer):
     #==================================================================
     # Initialize parameters in the layer
-    def __init__(self, in_siz, en_mid_siz, a, sine = True, prefixed = 0, std = 0.5):
+    def __init__(self, in_siz, en_mid_siz, de_mid_siz, a,
+                 sine = True, prefixed = 0, std = 0.5):
         super(MiddleLayer, self).__init__()
         self.in_siz         = in_siz
         self.en_mid_siz     = en_mid_siz
-        self.std            = std
-        self.de_mid_siz     = min(in_siz,en_mid_siz)
+        self.de_mid_siz     = de_mid_siz
+        self.std            = std        
         self.sine           = sine
         self.prefixed       = prefixed
         self.a              = a
@@ -68,7 +69,7 @@ class MiddleLayer(tf.keras.layers.Layer):
             #de_mid_data = tf.reshape(tf.concat((de_mid_data_r,de_mid_data_id),2),
             #                         (np.size(in_data,0), en_mid_siz, 1))
             #return(de_mid_data,de_mid_data_i0[0])
-            de_mid_data_r = np.reshape([], (0, en_mid_siz))
+            de_mid_data_r = np.reshape([], (0, de_mid_siz))
             for i in range(np.size(in_data,0)):
                 tmpVar = en_mid_data[i]
                 tmpVar = -tf.matmul(self.mid_DenseVar_relu,tmpVar)
@@ -145,15 +146,19 @@ class MiddleLayer(tf.keras.layers.Layer):
     
     def buildSineInverse(self):
         en_mid_siz = self.en_mid_siz
-        N = en_mid_siz//2
+        de_mid_siz = self.de_mid_siz
+        in_siz = self.in_siz
+        N = in_siz//4
+        K1 = en_mid_siz//2
+        K2 = de_mid_siz//2
         a = self.a
         mat = Inv_net_SineElliptic(a,N)
-
-        mat_relu = np.empty((2*N,N))
-        mat_relu[:N,:] = mat
-        mat_relu[N:,:] = -mat
+        mat = mat[:K2,:K1]
+        mat_relu = np.empty((2*K2,K1))
+        mat_relu[:K2,:] = mat
+        mat_relu[K2:,:] = -mat
         #print(mat_relu[:,2])
-        b_relu = np.zeros(2*N)
+        b_relu = np.zeros(2*K2)
         self.mid_DenseVar_relu = tf.Variable(mat_relu.astype(np.float32),
                                         name = "Dense_mid_str")
         #self.mid_DenseVar= tf.Variable(mat.astype(np.float32),

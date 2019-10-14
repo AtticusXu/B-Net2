@@ -23,7 +23,7 @@ input_size = paras['inputSize']
 N = input_size//2
 in_siz = input_size*2
 en_mid_siz = 16
-de_mid_siz = min(in_siz,en_mid_siz)
+de_mid_siz = 32
 out_siz = input_size
 in_range = np.float32([0,1])
 en_mid_range = np.float32([0,en_mid_siz/in_siz])
@@ -42,7 +42,7 @@ a = np.ones(N_0+1)
 m = N_0//4
 for j in range(N_0+1):
     if (j-m//2)%(2*m) < m:
-        a[j] = 1
+        a[j] = 10
 batch_siz = paras['batchSize'] # Batch size during traning
 channel_siz = paras['channelSize']
 adam_learning_rate = paras['ADAMparas']['learningRate']
@@ -77,7 +77,7 @@ global_steps=tf.Variable(0, trainable=False)
 en_butterfly_net = ButterflyLayer(2*N, in_siz, en_mid_siz, False,
         channel_siz, en_nlvl, -1, True,
         in_range, en_mid_range)
-middle_net = MiddleLayer(in_siz, en_mid_siz, a[::(2**4)],
+middle_net = MiddleLayer(in_siz, en_mid_siz, de_mid_siz, a[::(2**10//N)],
                                     sine = True, prefixed = 2, std = 0.5)
 de_butterfly_net = ButterflyLayer(N, de_mid_siz, out_siz, False,
         channel_siz, de_nlvl, 1, True,

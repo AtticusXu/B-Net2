@@ -22,7 +22,7 @@ input_size = paras['inputSize']
 N = input_size//2
 in_siz = input_size*2
 en_mid_siz = 16
-de_mid_siz = min(in_siz,en_mid_siz)
+de_mid_siz = 32
 out_siz = input_size
 in_range = np.float32([0,1])
 en_mid_range = np.float32([0,en_mid_siz/in_siz])
@@ -34,14 +34,14 @@ freqidx = range(en_mid_siz//2)
 #                                       [1],[0.1]))
 freqmag = np.zeros(N)
 for i in range(1,8):
-    freqmag[i] = 1
+    freqmag[i] = 10
 freqmag[N//2] = 0
 N_0 = 2**10
 a = np.ones(N_0+1)
 m = N_0//4
 for j in range(N_0+1):
     if (j-m//2)%(2*m) < m:
-        a[j] = 1
+        a[j] = 10
 batch_siz = paras['batchSize'] # Batch size during traning
 channel_siz = paras['channelSize']
 adam_learning_rate = paras['ADAMparas']['learningRate']
