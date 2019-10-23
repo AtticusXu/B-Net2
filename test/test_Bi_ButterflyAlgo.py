@@ -83,105 +83,55 @@ global_steps=tf.Variable(0, trainable=False)
 #=========================================================
 #----- Training Preparation
 en_butterfly_net = ButterflyLayer(2*N, in_siz, en_mid_siz, False,
-        channel_siz, en_nlvl, -1, prefixed,
+        channel_siz, en_nlvl, -1, True,
         in_range, en_mid_range)
-en_cnn_net = CNNLayer(2*N, in_siz, en_mid_siz, 
-        channel_siz, en_nlvl, -1, prefixed)
 
 middle_net = MiddleLayer(in_siz, en_mid_siz, de_mid_siz, a[::(2**10//N)],
                                     sine = True, prefixed = 2, std = 0.03)
 
 de_butterfly_net = ButterflyLayer(N, de_mid_siz, out_siz, False,
-        channel_siz, de_nlvl, 1, prefixed,
+        channel_siz, de_nlvl, 1, True,
         de_mid_range, out_range)
-de_cnn_net = CNNLayer(N, de_mid_siz, out_siz,
-        channel_siz, de_nlvl, 1, prefixed)
-if butterfly:
-    y_train_en_mid = en_butterfly_net(trainInData)
-    y_train_de_mid = middle_net(y_train_en_mid)
-    y_train_output = de_butterfly_net(y_train_de_mid)/N
-    y_train_output_i = -y_train_output[:,1::2,:]
-else:
-    y_train_en_mid = en_cnn_net(trainInData)
-    y_train_de_mid = middle_net(y_train_en_mid)
-    y_train_output = de_cnn_net(y_train_de_mid)/N
-    y_train_output_i = -y_train_output[:,1::2,:]
 
-st_dense = tf.Variable(dir_mat.astype(np.float32),
-                       trainable=False,name = "Solve_Train_Dense")
-f_train_output = tf.matmul(st_dense,y_train_output_i)
-
-learning_rate = tf.train.exponential_decay(adam_learning_rate,
-                                           global_steps,100,
-                                           adam_learning_rate_decay)
-optimizer_adam = tf.train.AdamOptimizer(learning_rate,
-        adam_beta1, adam_beta2)
+y_train_en_mid = en_butterfly_net(trainInData)
+y_train_de_mid = middle_net(y_train_en_mid)
+y_train_output = de_butterfly_net(y_train_de_mid)/N
+y_train_output_i = -y_train_output[:,1::2,:]
 
 MSE_loss_train_u = tf.reduce_mean(
         tf.squared_difference(trainOutData, y_train_output_i))
-MSE_loss_train_y = tf.reduce_mean(
-        tf.squared_difference(trainMidData[:,0::2], -y_train_en_mid[:,1::2]))
-MSE_loss_train_f = tf.reduce_mean(
-        tf.squared_difference(trainInData[:,0:input_size:2], f_train_output))
-
 L2_loss_train_u = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
             tf.squared_difference(trainOutData, y_train_output_i)),1)),trainOutNorm))
-L2_loss_train_y = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
-            tf.squared_difference(trainMidData[:,0::2],
-                                  -y_train_en_mid[:,1::2])),1)),trainMidNorm))
-L2_loss_train_f = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
-            tf.squared_difference(trainInData[:,0:input_size:2],
-                                  f_train_output)),1)),trainInNorm))
-boundary_loss = tf.reduce_mean(tf.square(y_train_output_i[:,0]))
-solvetrain_loss = MSE_loss_train_f + beta*boundary_loss
-
-train_step = optimizer_adam.minimize(MSE_loss_train_u,global_step=global_steps)
-
 # Initialize Variables
 init = tf.global_variables_initializer()
+
 print("Total Num Paras:  %6d" % ( np.sum( [np.prod(v.get_shape().as_list())
     for v in tf.trainable_variables()]) ))
-    
-sess.run(init)
-err_list = np.zeros((3,max_iter//record_freq))
+
+#=========================================================
+#----- Step by Step Training
 f_train = np.load('tftmp/fft_4000_f_train_c.npy')
 y_train = np.load('tftmp/fft_4000_y_train_c.npy')
 u_train = np.load('tftmp/fft_4000_u_train_c.npy')
 f_norm = np.load('tftmp/fft_4000_f_norm_c.npy')
 y_norm = np.load('tftmp/fft_4000_y_norm_c.npy')
 u_norm = np.load('tftmp/fft_4000_u_norm_c.npy')
-for it in range(max_iter):
-    start = (it*batch_siz)%trainset
-    end = ((it+1)*batch_siz-1)%trainset+1
-    f_train_it = f_train[start:end]
-    y_train_it = y_train[start:end]
-    u_train_it = u_train[start:end]
-    f_norm_it = f_norm[start:end]
-    y_norm_it = y_norm[start:end]
-    u_norm_it = u_norm[start:end]
+f_train_it = f_train[0:batch_siz]
+y_train_it = y_train[0:batch_siz]
+u_train_it = u_train[0:batch_siz]
+f_norm_it = f_norm[0:batch_siz]
+y_norm_it = y_norm[0:batch_siz]
+u_norm_it = u_norm[0:batch_siz]
+sess.run(init)
+train_dict = {trainInData: f_train_it, trainInNorm: f_norm_it,
+              trainMidData: y_train_it, trainMidNorm: y_norm_it,
+              trainOutData: u_train_it, trainOutNorm: u_norm_it}
 
-    train_dict = {trainInData: f_train_it, trainInNorm: f_norm_it,
-                  trainMidData: y_train_it, trainMidNorm: y_norm_it,
-                  trainOutData: u_train_it, trainOutNorm: u_norm_it}
-    if it % report_freq == 0:
-        [f,y_L2_loss,y_loss,u_L2_loss,u_loss,f_L2_loss,f_loss] = sess.run(
-                    [solvetrain_loss,L2_loss_train_y, MSE_loss_train_y,
-                     L2_loss_train_u, MSE_loss_train_u,
-                     L2_loss_train_f, MSE_loss_train_f],
-                    feed_dict=train_dict)
-        print('step(s): %d'%it)
-        print(f)
-        #print(f_train_it[0])
-        print('f_mse:%10e,f_l2:%10e'%(f_loss, f_L2_loss))
-        print('y_mse:%10e,y_l2:%10e'%(y_loss, y_L2_loss))
-        print('u_mse:%10e,u_l2:%10e'%(u_loss, u_L2_loss))
-        if it % record_freq == 0:
-            err_list[0,it//record_freq] = f_L2_loss
-            err_list[1,it//record_freq] = y_L2_loss
-            err_list[2,it//record_freq] = u_L2_loss
+train_loss = sess.run(L2_loss_train_u,feed_dict=train_dict)
+print("Train Loss: %10e." % (train_loss))
 
-    sess.run(train_step, feed_dict=train_dict)
-#print(y_en[0])
-#print(y_de[0])
-#print(y_out[0])
-#print(y_loss)
+for n in tf.global_variables():
+    np.save('tftmp/'+n.name.split(':')[0], n.eval(session=sess))
+    print(n.name.split(':')[0] + ' saved')
+
+sess.close()

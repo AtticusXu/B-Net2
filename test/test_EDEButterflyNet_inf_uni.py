@@ -34,14 +34,14 @@ freqidx = range(en_mid_siz//2)
 #                                       [1],[0.1]))
 freqmag = np.zeros(N)
 for i in range(1,8):
-    freqmag[i] = 10
+    freqmag[1] = 1
 freqmag[N//2] = 0
 N_0 = 2**10
 a = np.ones(N_0+1)
 m = N_0//4
 for j in range(N_0+1):
     if (j-m//2)%(2*m) < m:
-        a[j] = 10
+        a[j] = 1
 batch_siz = paras['batchSize'] # Batch size during traning
 channel_siz = paras['channelSize']
 adam_learning_rate = paras['ADAMparas']['learningRate']
@@ -54,6 +54,9 @@ trainset =  paras['trainset']
 
 f_train,y_train,u_train,f_norm,y_norm,u_norm = gen_ede_Ell_data(
             trainset,freqidx,freqmag,a)
+print(np.mean(f_norm))
+print(np.mean(y_norm))
+print(np.mean(u_norm))
 np.save('tftmp/fft_4000_f_train_c', f_train)
 np.save('tftmp/fft_4000_y_train_c', y_train)
 np.save('tftmp/fft_4000_u_train_c', u_train)

@@ -141,7 +141,7 @@ class ButterflyLayer(tf.keras.layers.Layer):
 
             self.InFilterVar = tf.Variable( mat.astype(np.float32),
                 name="Filter_In" ,trainable=False )
-            self.InBiasVar = tf.Variable( tf.zeros([self.channel_siz]),
+            self.InBiasVar = tf.Variable( tf.zeros([channel_siz]),
                 name="Bias_In" ,trainable=False )
         else:
             self.InFilterVar = tf.Variable( tf.random_normal(
@@ -157,7 +157,6 @@ class ButterflyLayer(tf.keras.layers.Layer):
         self.BiasVars.append(list([]))
         
         for lvl in range(1,k1lvl+1):
-            print('sb')
             tmpFilterVars = []
             tmpBiasVars = []
             for itk in range(0,2**lvl):
@@ -237,6 +236,10 @@ class ButterflyLayer(tf.keras.layers.Layer):
         out_filter_siz = self.out_filter_siz
         in_range       = self.in_range
         out_range      = self.out_range
+        if sig ==-1:
+            coder = 'en_'
+        else:
+            coder = 'de_'
 
         NG = channel_siz//4
         ChebNodes = (np.cos(np.array(range(2*NG-1,0,-2))/2/NG*math.pi) \
@@ -265,11 +268,11 @@ class ButterflyLayer(tf.keras.layers.Layer):
             mat[idx,0,4*it+3] = -np.multiply(KVal.real,LVec)
 
         self.InFilterVar = tf.Variable( mat.astype(np.float32),
-                name="Filter_In_str" )
+                name=coder+"Filter_In_str" )
         self.InBiasVar = tf.Variable( tf.zeros([channel_siz]),
-                name="Bias_In_str" )
-        tf.summary.histogram("Filter_In_str", self.InFilterVar)
-        tf.summary.histogram("Bias_In_str", self.InBiasVar)
+                name=coder+"Bias_In_str" )
+        tf.summary.histogram(coder+"Filter_In_str", self.InFilterVar)
+        tf.summary.histogram(coder+"Bias_In_str", self.InBiasVar)
 
         #----------------
         # Setup ell layer weights
@@ -317,11 +320,11 @@ class ButterflyLayer(tf.keras.layers.Layer):
                     mat[0,:,(4*it+2,4*it+3)] = - mat[0,:,(4*it,4*it+1)]
 
                 filterVar = tf.Variable( mat.astype(np.float32),
-                        name="Filter_"+varLabel )
+                        name=coder+"Filter_"+varLabel )
                 biasVar = tf.Variable(tf.zeros([channel_siz]),
-                        name="Bias_"+varLabel )
-                tf.summary.histogram("Filter_"+varLabel, filterVar)
-                tf.summary.histogram("Bias_"+varLabel, biasVar)
+                        name=coder+"Bias_"+varLabel )
+                tf.summary.histogram(coder+"Filter_"+varLabel, filterVar)
+                tf.summary.histogram(coder+"Bias_"+varLabel, biasVar)
                 tmpFilterVars.append(filterVar)
                 tmpBiasVars.append(biasVar)
             self.FilterVars.append(list(tmpFilterVars))
@@ -382,11 +385,11 @@ class ButterflyLayer(tf.keras.layers.Layer):
                     mat[1,:,(4*it+2,4*it+3)] = - mat[1,:,(4*it,4*it+1)]
 
                 filterVar = tf.Variable( mat.astype(np.float32),
-                        name="Filter_"+varLabel )
+                        name=coder+"Filter_"+varLabel )
                 biasVar = tf.Variable(tf.zeros([channel_siz]),
-                        name="Bias_"+varLabel )
-                tf.summary.histogram("Filter_"+varLabel, filterVar)
-                tf.summary.histogram("Bias_"+varLabel, biasVar)
+                        name=coder+"Bias_"+varLabel )
+                tf.summary.histogram(coder+"Filter_"+varLabel, filterVar)
+                tf.summary.histogram(coder+"Bias_"+varLabel, biasVar)
                 tmpFilterVars.append(filterVar)
                 tmpBiasVars.append(biasVar)
             self.FilterVars.append(list(tmpFilterVars))
@@ -446,11 +449,11 @@ class ButterflyLayer(tf.keras.layers.Layer):
                     mat[1,:,(4*it+2,4*it+3)] = - mat[1,:,(4*it,4*it+1)]
 
                 filterVar = tf.Variable( mat.astype(np.float32),
-                        name="Filter_"+varLabel )
+                        name=coder+"Filter_"+varLabel )
                 biasVar = tf.Variable(tf.zeros([channel_siz]),
-                        name="Bias_"+varLabel )
-                tf.summary.histogram("Filter_"+varLabel, filterVar)
-                tf.summary.histogram("Bias_"+varLabel, biasVar)
+                        name=coder+"Bias_"+varLabel )
+                tf.summary.histogram(coder+"Filter_"+varLabel, filterVar)
+                tf.summary.histogram(coder+"Bias_"+varLabel, biasVar)
                 tmpFilterVars.append(filterVar)
                 tmpBiasVars.append(biasVar)
             self.FilterVars.append(list(tmpFilterVars))
@@ -483,6 +486,6 @@ class ButterflyLayer(tf.keras.layers.Layer):
                     mat[4*iti+3,2*itj+1] = - KVal.real
 
             denseVar = tf.Variable( mat.astype(np.float32),
-                        name=varLabel )
+                        name=coder+varLabel )
             tf.summary.histogram(varLabel, denseVar)
             self.FeaDenseVars.append(denseVar)
