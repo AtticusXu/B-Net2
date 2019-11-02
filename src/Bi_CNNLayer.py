@@ -6,7 +6,7 @@ class CNNLayer(tf.keras.layers.Layer):
     #==================================================================
     # Initialize parameters in the layer
     def __init__(self, N, in_siz, out_siz, channel_siz = 8, nlvl = -1,
-                 sig = -1, prefixed = False):
+                 sig = -1, prefixed = False, std =0.5):
         super(CNNLayer, self).__init__()
         self.N              = N
         self.in_siz         = in_siz
@@ -18,7 +18,7 @@ class CNNLayer(tf.keras.layers.Layer):
         self.k2lvl          = min(np.floor(
                                 np.log2(out_siz/2)).astype('int'), nlvl)
         self.sig            = sig
-
+        self.std            = std
         self.in_filter_siz  = max(2, in_siz // 2**nlvl)
         self.out_filter_siz = max(2, out_siz // 2**nlvl)
 
@@ -83,7 +83,7 @@ class CNNLayer(tf.keras.layers.Layer):
     # Initialize variables in the layer
     def buildRand(self):
         
-        std = 0.4
+        std            = self.std
         nlvl           = self.nlvl
         k1lvl          = self.k1lvl
         k2lvl          = self.k2lvl

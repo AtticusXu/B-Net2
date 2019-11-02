@@ -169,6 +169,14 @@ def InvSine_f_Elliptic(a,N,f):
     mat = fftpack.dst(mat,1,N-1,axis = 0)/N
     return mat
 
+def DirNonlinearElliptic(N,a,b,u):
+    mat_L = DirSineElliptic(a,N)
+    f_L = np.matmul(mat_L,u)
+    f_N = b*u*u*u
+    f = f_N+f_L
+    return f
+
+
 #L2_loss = np.ones(6)
 #Li_loss = np.zeros(6)
 #Nl = np.zeros(6)

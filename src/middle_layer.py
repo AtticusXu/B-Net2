@@ -8,7 +8,7 @@ class MiddleLayer(tf.keras.layers.Layer):
     #==================================================================
     # Initialize parameters in the layer
     def __init__(self, in_siz, en_mid_siz, de_mid_siz, a,
-                 sine = True, prefixed = 0, std = 0.5):
+                 sine = True, prefixed = False, std = 0.5):
         super(MiddleLayer, self).__init__()
         self.in_siz         = in_siz
         self.en_mid_siz     = en_mid_siz
@@ -17,12 +17,12 @@ class MiddleLayer(tf.keras.layers.Layer):
         self.sine           = sine
         self.prefixed       = prefixed
         self.a              = a
-        if self.prefixed == 0:
+        if self.prefixed:
+            self.buildSineInverse()            
+        else:
             self.buildrandom()
-        elif self.prefixed == 1:
-            self.buildidentity()
-        elif self.prefixed == 2:
-            self.buildSineInverse()
+
+            
             
     
     def call(self, in_data):
@@ -54,11 +54,11 @@ class MiddleLayer(tf.keras.layers.Layer):
                                     (np.size(in_data,0),de_mid_siz//2,1))
             en_mid_data = tf.concat([en_mid_data_r, en_mid_data_i],2)
         
-        if prefixed == 1:
-            de_mid_data = tf.multiply(en_mid_data,self.mid_DenseVar)
-            de_mid_data = tf.reshape(de_mid_data,(np.size(in_data,0),de_mid_siz,1))
-            return(de_mid_data)
-        elif sine:
+        #if prefixed == 1:
+        #    de_mid_data = tf.multiply(en_mid_data,self.mid_DenseVar)
+        #    de_mid_data = tf.reshape(de_mid_data,(np.size(in_data,0),de_mid_siz,1))
+        #    return(de_mid_data)
+        if sine:
             #de_mid_data_id = np.reshape([], (0, en_mid_siz//2,1))
             #for i in range(np.size(in_data,0)):
             #    tmpVar = en_mid_data[i]

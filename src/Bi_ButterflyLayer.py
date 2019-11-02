@@ -9,7 +9,7 @@ class ButterflyLayer(tf.keras.layers.Layer):
     # Initialize parameters in the layer
     def __init__(self, N, in_siz, out_siz, prep,
             channel_siz = 8, nlvl = -1, sig = -1, prefixed = False,
-            in_range = [0, 1], out_range = [0, 1]):
+            in_range = [0, 1], out_range = [0, 1],std = 0.5):
         super(ButterflyLayer, self).__init__()
         self.N              = N
         self.in_siz         = in_siz
@@ -24,7 +24,7 @@ class ButterflyLayer(tf.keras.layers.Layer):
         self.out_range      = out_range
         self.sig            = sig
         self.prep           = prep
-
+        self.std            = std
         self.in_filter_siz  = max(2, in_siz // 2**nlvl)
         self.out_filter_siz = max(2, out_siz // 2**nlvl)
 
@@ -108,7 +108,7 @@ class ButterflyLayer(tf.keras.layers.Layer):
     # Initialize variables in the layer
     def buildRand(self):
         
-        std = 0.5
+        std            = self.std
         nlvl           = self.nlvl
         k1lvl          = self.k1lvl
         k2lvl          = self.k2lvl
