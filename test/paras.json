@@ -14,7 +14,7 @@
     "batchSize": 256,
     "channelSize": 12,
     "trainset": 4096,
-    "maxIter": 2000,
+    "maxIter": 10000,
     "reportFreq": 20,
     "recordFreq": 100,
     "ADAMparas": {
