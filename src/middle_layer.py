@@ -7,8 +7,8 @@ from ODE_matrix import Inv_net_SineElliptic
 class MiddleLayer(tf.keras.layers.Layer):
     #==================================================================
     # Initialize parameters in the layer
-    def __init__(self, in_siz, en_mid_siz, de_mid_siz, a,
-                 sine = True, prefixed = False, std = 0.5):
+    def __init__(self, in_siz, en_mid_siz, de_mid_siz, sine = True,
+                 a=[1],prefixed = False, std = 0.5):
         super(MiddleLayer, self).__init__()
         self.in_siz         = in_siz
         self.en_mid_siz     = en_mid_siz
@@ -30,45 +30,13 @@ class MiddleLayer(tf.keras.layers.Layer):
         in_siz = self.in_siz
         en_mid_siz =  self.en_mid_siz
         de_mid_siz = self.de_mid_siz
-        prefixed = self.prefixed
         sine = self.sine
-        half = min(en_mid_siz//2,in_siz//4)
+        half = min(en_mid_siz//2,in_siz//2)
         if sine:
             en_mid_data = tf.reshape(in_data,(np.size(in_data,0),
                                               en_mid_siz//2,2))
             en_mid_data = tf.reshape(-en_mid_data[:,:,1],(np.size(in_data,0),
                                               en_mid_siz//2,1))
-            
-        else:
-            en_mid_data = tf.reshape(in_data,(np.size(in_data,0),
-                                              en_mid_siz//2,2))
-            en_mid_data_r = en_mid_data[:,:,0]
-            en_mid_data_i = en_mid_data[:,:,1]
-            en_mid_data_r = tf.reshape(tf.concat([np.zeros((np.size(in_data,0),1)),
-                                    en_mid_data_r[:,half-1:0:-1],
-                                    en_mid_data_r[:,0:half]],1),
-                                    (np.size(in_data,0),de_mid_siz//2,1))
-            en_mid_data_i = tf.reshape(tf.concat([np.zeros((np.size(in_data,0),1)),
-                                    -en_mid_data_i[:,half-1:0:-1],
-                                    en_mid_data_i[:,0:half]],1),
-                                    (np.size(in_data,0),de_mid_siz//2,1))
-            en_mid_data = tf.concat([en_mid_data_r, en_mid_data_i],2)
-        
-        #if prefixed == 1:
-        #    de_mid_data = tf.multiply(en_mid_data,self.mid_DenseVar)
-        #    de_mid_data = tf.reshape(de_mid_data,(np.size(in_data,0),de_mid_siz,1))
-        #    return(de_mid_data)
-        if sine:
-            #de_mid_data_id = np.reshape([], (0, en_mid_siz//2,1))
-            #for i in range(np.size(in_data,0)):
-            #    tmpVar = en_mid_data[i]
-            #    tmpVar = -tf.matmul(self.mid_DenseVar,tmpVar)
-            #    tmpVar = tf.reshape(tmpVar,(1,de_mid_siz//2,1))
-            #    de_mid_data_id = tf.concat([de_mid_data_id, tmpVar], axis=0)
-            #de_mid_data_r = np.zeros((np.size(in_data,0),de_mid_siz//2,1))
-            #de_mid_data = tf.reshape(tf.concat((de_mid_data_r,de_mid_data_id),2),
-            #                         (np.size(in_data,0), en_mid_siz, 1))
-            #return(de_mid_data,de_mid_data_i0[0])
             de_mid_data_r = np.reshape([], (0, de_mid_siz))
             for i in range(np.size(in_data,0)):
                 tmpVar = en_mid_data[i]
@@ -85,16 +53,41 @@ class MiddleLayer(tf.keras.layers.Layer):
             de_mid_data = tf.reshape(tf.concat((de_mid_data_r,de_mid_data_i),2),
                                      (np.size(in_data,0), de_mid_siz, 1))
             return(de_mid_data)
+            
         else:
-            en_mid_data = tf.reshape(en_mid_data,
+            en_mid_data = tf.reshape(in_data,(np.size(in_data,0),
+                                              en_mid_siz//2,2))
+            en_mid_data_r = en_mid_data[:,:,0]
+            en_mid_data_i = en_mid_data[:,:,1]
+            en_mid_data_r = tf.reshape(tf.concat([np.zeros((np.size(in_data,0),1)),
+                                    en_mid_data_r[:,half-1:0:-1],
+                                    en_mid_data_r[:,0:half]],1),
+                                    (np.size(in_data,0),de_mid_siz//2,1))
+            en_mid_data_i = tf.reshape(tf.concat([np.zeros((np.size(in_data,0),1)),
+                                    -en_mid_data_i[:,half-1:0:-1],
+                                    en_mid_data_i[:,0:half]],1),
+                                    (np.size(in_data,0),de_mid_siz//2,1))
+            de_mid_data = tf.reshape(tf.concat([en_mid_data_r, en_mid_data_i],2),
                                      (np.size(in_data,0),de_mid_siz,1))
-            de_mid_data = np.reshape([], (0, de_mid_siz,1))
-            for i in range(np.size(in_data,0)):
-                tmpVar = en_mid_data[i]
-                tmpVar = tf.matmul(self.mid_DenseVar,tmpVar)
-                tmpVar = tf.reshape(tmpVar,(1,de_mid_siz,1))
-                de_mid_data = tf.concat([de_mid_data, tmpVar], axis=0)
+            
             return(de_mid_data)
+        
+        #if prefixed == 1:
+        #    de_mid_data = tf.multiply(en_mid_data,self.mid_DenseVar)
+        #    de_mid_data = tf.reshape(de_mid_data,(np.size(in_data,0),de_mid_siz,1))
+        #    return(de_mid_data)
+        #if sine:
+            #de_mid_data_id = np.reshape([], (0, en_mid_siz//2,1))
+            #for i in range(np.size(in_data,0)):
+            #    tmpVar = en_mid_data[i]
+            #    tmpVar = -tf.matmul(self.mid_DenseVar,tmpVar)
+            #    tmpVar = tf.reshape(tmpVar,(1,de_mid_siz//2,1))
+            #    de_mid_data_id = tf.concat([de_mid_data_id, tmpVar], axis=0)
+            #de_mid_data_r = np.zeros((np.size(in_data,0),de_mid_siz//2,1))
+            #de_mid_data = tf.reshape(tf.concat((de_mid_data_r,de_mid_data_id),2),
+            #                         (np.size(in_data,0), en_mid_siz, 1))
+            #return(de_mid_data,de_mid_data_i0[0])
+            
         
     def buildrandom(self):
         std = self.std

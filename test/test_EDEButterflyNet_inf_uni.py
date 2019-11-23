@@ -41,7 +41,7 @@ a = np.ones(N_0+1)
 m = N_0//4
 for j in range(N_0+1):
     if (j-m//2)%(2*m) < m:
-        a[j] = 1
+        a[j] = 10
 batch_siz = paras['batchSize'] # Batch size during traning
 channel_siz = paras['channelSize']
 adam_learning_rate = paras['ADAMparas']['learningRate']
@@ -66,7 +66,9 @@ np.save('tftmp/fft_4000_u_norm_c', u_norm)
 
 f_test,y_test,u_test,f_norm_test,y_norm_test,u_norm_test = gen_ede_Ell_data(
             testset,freqidx,freqmag,a)
-
+print(np.mean(f_norm_test))
+print(np.mean(y_norm_test))
+print(np.mean(u_norm_test))
 np.save('tftmp/fft_5000_f_test_c', f_test)
 np.save('tftmp/fft_5000_y_test_c', y_test)
 np.save('tftmp/fft_5000_u_test_c', u_test)

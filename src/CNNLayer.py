@@ -70,7 +70,7 @@ class CNNLayer(tf.keras.layers.Layer):
     #==================================================================
     # Initialize variables in the layer
     def buildRand(self):
-        std = 0.4
+        std = 0.35
         
         # Preparation Layer
         if self.prep:

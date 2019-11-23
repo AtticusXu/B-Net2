@@ -117,12 +117,11 @@ def evaluate():
     mk_test_loss_list = np.zeros((5*out_siz//2-3,S+1))
     epochs = np.linspace(0,max_iter,max_iter//record_freq)
     mk_test_loss_l2_list = np.zeros((5*out_siz//2-3,S+1))
-    for s in range(1):
+    for s in range(S):
         sess.run(init)
         MODEL_SAVE_PATH = "train_model/"
         MODEL_NAME = "fft_"+str(prefixed)+"_"+str(s)+"_model"
-        #if s != S:
-            #saver.restore(sess, MODEL_SAVE_PATH + MODEL_NAME+".ckpt")
+        saver.restore(sess, MODEL_SAVE_PATH + MODEL_NAME+".ckpt")
         for j in range(5*out_siz//2-3):
             x_test,y_test,y_norm = gen_uni_data(freqmag[j],
                                                 freqidx,test_batch_siz,sig)
@@ -147,11 +146,11 @@ def evaluate():
         #mk_test_loss_list = np.mean(np.log10(mk_test_loss_list),axis = 1)
         #print(test_loss_klist)
         #print(K_norm[0:out_siz//2])
-    print(mk_test_loss_l2_list[:,0])
+    print(mk_test_loss_l2_list)
     #np.save('train_model/fft_mk_test_loss_list_'+str(prefixed), 
     #        mk_test_loss_list)
-    np.save('fft_mk_test_loss_l2_list_'+str(prefixed), 
-            mk_test_loss_l2_list[:,0])
+    np.save('train_model/fft_mk_test_loss_l2_list_'+str(prefixed), 
+            mk_test_loss_l2_list)
     #for k in range(out_siz//2):
     #    fig = plt.figure(k,figsize=(10,8))
     #    for s in range(S):

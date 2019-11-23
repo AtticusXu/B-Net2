@@ -1,7 +1,7 @@
 import numpy as np
 import math
 from ODE_matrix import InvElliptic, Inv_2_Elliptic, InvSineElliptic
-from scipy import fftpack
+from scipy import fftpack,signal
 def gen_uni_data(freqmag,freqidx,siz,sig):
     N = len(freqmag)
     K = len(freqidx)
@@ -35,11 +35,10 @@ def gen_uni_data(freqmag,freqidx,siz,sig):
     
     return xdata,ydata,ynorm
 
-def gen_ede_uni_data(freqmag,freqidx,siz,sig):
+def gen_ede_denoise_data(freqmag,freqidx,siz,sig,n):
     N = len(freqmag)
     K = len(freqidx)
-    a = 10
-
+    a = 3000
     freqmag = np.tile(np.reshape(freqmag,[1,N]),(siz,1))
     consty = np.random.uniform(-np.sqrt(a),np.sqrt(a),[siz,1])
     zeroy = np.zeros([siz,1])
@@ -57,19 +56,71 @@ def gen_ede_uni_data(freqmag,freqidx,siz,sig):
     realy = realy*freqmag
     imagy = imagy*freqmag
     y = realy + imagy*1j
-    
+    noise = n*np.random.randn(siz,1,N)
     realx = np.reshape(np.fft.ifft(y,N,1).real,(siz,1,N),order='F')
     imagx = np.reshape(np.fft.ifft(y,N,1).imag,(siz,1,N),order='F')
-    xdata = np.reshape(np.concatenate((realx,imagx),axis=1),(siz,-1,1),order='F')
+    xdata = np.reshape(realx,(siz,-1,1))
+    realu = realx + noise
+    udata = np.reshape(np.concatenate((realu,imagx),axis=1),(siz,-1,1),order='F')
     y = np.reshape(y,(siz,1,N),order='F')
     realy = y.real[:,:,freqidx]
     imagy = y.imag[:,:,freqidx]
     ydata = np.reshape(np.concatenate((realy,imagy),axis=1),(siz,-1,1),order='F')
     xnorm = np.squeeze(np.linalg.norm(xdata,2,1))
     ynorm = np.squeeze(np.linalg.norm(ydata,2,1))
+    unorm = np.squeeze(np.linalg.norm(udata,2,1))
+    nnorm = np.squeeze(np.linalg.norm(noise,2,2))
+    n_rel = np.mean(nnorm/xnorm)
     xdata = np.float32(xdata)
     ydata = np.float32(ydata)
-    return xdata,ydata,xnorm,ynorm,y
+    udata = np.float32(udata)
+    return xdata,ydata,udata,xnorm,ynorm,unorm,nnorm,n_rel
+
+def gen_ede_deblur_data(freqmag,freqidx,siz,sig,bs):
+    N = len(freqmag)
+    K = len(freqidx)
+    a = 3000
+    freqmag = np.tile(np.reshape(freqmag,[1,N]),(siz,1))
+    consty = np.random.uniform(-np.sqrt(a),np.sqrt(a),[siz,1])
+    zeroy = np.zeros([siz,1])
+    if N % 2 == 0:
+        halfy = np.random.uniform(-np.sqrt(a/2),np.sqrt(a/2),[siz,N//2-1])
+        realy = np.concatenate((consty,halfy,zeroy,halfy[:,::-1]),axis=1)
+        halfy = np.random.uniform(-np.sqrt(a/2),np.sqrt(a/2),[siz,N//2-1])
+        imagy = np.concatenate((zeroy,halfy,zeroy,-halfy[:,::-1]),axis=1)
+    else:
+        halfy = np.random.uniform(-np.sqrt(a/2),np.sqrt(a/2),[siz,N//2])
+        realy = np.concatenate((consty,halfy,halfy[:,::-1]),axis=1)
+        halfy = np.random.uniform(-np.sqrt(a/2),np.sqrt(a/2),[siz,N//2])
+        imagy = np.concatenate((zeroy,halfy,-halfy[:,::-1]),axis=1)
+
+    realy = realy*freqmag
+    imagy = imagy*freqmag
+    y = realy + imagy*1j
+    gaus = np.empty(9)
+    for i in range(9):
+        gaus[i] = np.exp(-np.power(i-4,2.)/(2*bs**2))/np.sqrt(2*np.pi*bs**2)
+    
+    realx = np.reshape(np.fft.ifft(y,N,1).real,(siz,1,N),order='F')
+    imagx = np.reshape(np.fft.ifft(y,N,1).imag,(siz,1,N),order='F')
+    xdata = np.reshape(realx,(siz,-1,1))
+    realu = np.empty((siz,1,N))
+    for j in range(siz):
+        realu[j,0] = signal.convolve(realx[j,0], gaus, mode='same')  
+    udata = np.reshape(np.concatenate((realu,imagx),axis=1),(siz,-1,1),order='F')
+    y = np.reshape(y,(siz,1,N),order='F')
+    realy = y.real[:,:,freqidx]
+    imagy = y.imag[:,:,freqidx]
+    ydata = np.reshape(np.concatenate((realy,imagy),axis=1),(siz,-1,1),order='F')
+    xnorm = np.squeeze(np.linalg.norm(xdata,2,1))
+    ynorm = np.squeeze(np.linalg.norm(ydata,2,1))
+    unorm = np.squeeze(np.linalg.norm(udata,2,1))
+    bnorm = np.squeeze(np.linalg.norm(udata[:,::2]-xdata,2,1))
+    b_rel = np.mean(bnorm/xnorm)
+    xdata = np.float32(xdata)
+    ydata = np.float32(ydata)
+    udata = np.float32(udata)
+    return xdata,ydata,udata,xnorm,ynorm,unorm,b_rel
 
 def gen_ede_Ell_data(siz, freqidx, freqmag, a_0):
     
@@ -115,7 +166,7 @@ def gen_ede_Ell_data(siz, freqidx, freqmag, a_0):
     u = u_0[:,::N_0//N,:]
     #print("u")
     #print(u[0,:,0])
-    fnorm = np.squeeze(np.linalg.norm(fdata,2,1))/np.sqrt(2)
+    fnorm = np.linalg.norm(np.squeeze(fdata),2,1)/np.sqrt(2)
     unorm = np.squeeze(np.linalg.norm(u,2,1))
     #print(np.mean(unorm))
     fdata = np.float32(fdata)
@@ -216,7 +267,8 @@ def gen_ede_Ell_sine_data(siz, freqidx, freqmag, a):
     udata = np.float32(u)
     ydata = np.float32(ydata)
     return fdata, ydata, udata, fnorm, ynorm, unorm    
-    
+  
+
 def gen_energy_uni_data(freqmag,freqidx,K_,siz,sig):
     N = len(freqmag)
     K = len(freqidx)

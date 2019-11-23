@@ -38,7 +38,7 @@ for i in range(out_siz//2):
     freqmag[5*out_siz//2-4,i]=0.05
     freqmag[5*out_siz//2-4,-i]=0.05
     
-a = np.zeros((1,out_siz))
+a = np.ones((1,out_siz))
 a[0,0]=1
 a[0,1]=1
 #=========================================================

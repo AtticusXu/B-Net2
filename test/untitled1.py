@@ -38,7 +38,7 @@ freqidx = range(en_mid_siz//2)
 #                                       [1],[0.1]))
 freqmag = np.zeros(N)
 for i in range(1,8):
-    freqmag[1] = 1
+    freqmag[i] = 1
 freqmag[N//2] = 0
 N_0 = 2**10
 a = np.ones(N_0+1)
@@ -46,7 +46,7 @@ m = N_0//4
 for j in range(N_0+1):
     if (j-m//2)%(2*m) < m:
         a[j] = 1
-b = 0.1
+b = 10**4
 batch_siz = paras['batchSize'] # Batch size during traning
 channel_siz = paras['channelSize']
 adam_learning_rate = paras['ADAMparas']['learningRate']
@@ -62,7 +62,7 @@ trainset =  paras['trainset']
 test_siz = paras['Ntest']
 en_nlvl = 4
 de_nlvl = 4
-beta = 10**4
+beta = 10**3
 dir_mat = DirSineElliptic(a[::(2**10//N)],N)
 dir_mat_train = np.tile(dir_mat,(batch_siz,1,1))
 dir_mat_test = np.tile(dir_mat,(test_siz,1,1))
@@ -99,16 +99,16 @@ global_steps=tf.Variable(0, trainable=False)
 #=========================================================
 #----- Training Preparation
 
-middle_net = MiddleLayer(in_siz, en_mid_siz, de_mid_siz, a[::(2**10//N)],
-                                True, prefixed, std = 0.1)
+middle_net = MiddleLayer(in_siz, en_mid_siz, de_mid_siz, True,
+                         a[::(2**10//N)], prefixed, std = 0.1)
 
 if butterfly:
     en_butterfly_net = ButterflyLayer(2*N, in_siz, en_mid_siz, False,
         channel_siz, en_nlvl, -1, prefixed,
-        in_range, en_mid_range,0.5)
+        in_range, en_mid_range,0.45)
     de_butterfly_net = ButterflyLayer(N, de_mid_siz, out_siz, False,
         channel_siz, de_nlvl, 1, prefixed,
-        de_mid_range, out_range,0.5)
+        de_mid_range, out_range,0.45)
     
     y_train_en_mid = en_butterfly_net(trainInData)
     y_train_de_mid = middle_net(y_train_en_mid)
@@ -121,9 +121,9 @@ if butterfly:
     y_test_output_i = -y_test_output[:,1::2,:]
 else:
     en_cnn_net = CNNLayer(2*N, in_siz, en_mid_siz, 
-        channel_siz, en_nlvl, -1, prefixed,0.4)
+        channel_siz, en_nlvl, -1, prefixed,0.3)
     de_cnn_net = CNNLayer(N, de_mid_siz, out_siz,
-        channel_siz, de_nlvl, 1, prefixed,0.4)
+        channel_siz, de_nlvl, 1, prefixed,0.3)
     
     y_train_en_mid = en_cnn_net(trainInData)
     y_train_de_mid = middle_net(y_train_en_mid)
@@ -210,7 +210,7 @@ boundary_loss_test = tf.reduce_mean(tf.square(y_test_output_i[:,0]))
 solvetrain_loss_test = MSE_loss_test_f + beta*boundary_loss_test
 
 #mix_loss = MSE_loss_train_u + 10**(-9)*solvetrain_loss
-train_step = optimizer_adam.minimize(solvetrain_loss_train,global_step=global_steps)
+train_step = optimizer_adam.minimize(MSE_loss_train_u,global_step=global_steps)
 
 # Initialize Variables
 init = tf.global_variables_initializer()

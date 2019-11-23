@@ -53,12 +53,13 @@ batch_siz = paras['batchSize'] # Batch size during traning
 channel_siz = paras['channelSize'] # Num of interp pts on each dim
 
 adam_learning_rate = paras['ADAMparas']['learningRate']
+adam_learning_rate_decay = paras['ADAMparas']['learningRatedecay']
 adam_beta1 = paras['ADAMparas']['beta1']
 adam_beta2 = paras['ADAMparas']['beta2']
 
 max_iter = paras['maxIter'] # Maximum num of iterations
 report_freq = paras['reportFreq'] # Frequency of reporting
-
+test_batch_siz = paras['Ntest']
 #----- Self-adjusted Parameters of BNet
 # Num of levels of the BF struct, must be a even num
 nlvl = paras["nlvl"]
@@ -91,45 +92,73 @@ trainMidData = tf.placeholder(tf.float32, shape=(batch_siz,out_siz,1),
         name="trainMidData")
 trainNorm = tf.placeholder(tf.float32, shape=(batch_siz),
         name="trainNorm")
+testInData = tf.placeholder(tf.float32, shape=(test_batch_siz,in_siz,1),
+        name="testInData")
+testOutData = tf.placeholder(tf.float32, shape=(test_batch_siz,1),
+        name="testOutData")
+testMidData = tf.placeholder(tf.float32, shape=(test_batch_siz,out_siz,1),
+        name="testMidData")
+testNorm = tf.placeholder(tf.float32, shape=(test_batch_siz),
+        name="testNorm")
+global_steps=tf.Variable(0, trainable=False)
 #=========================================================
 #----- Training Preparation
 CNN_net = CNNLayer(in_siz, out_siz,False,3,2,
         channel_siz, nlvl, prefixed)
 
+learning_rate = tf.train.exponential_decay(adam_learning_rate,
+                                           global_steps,100,
+                                           adam_learning_rate_decay)
 optimizer_adam = tf.train.AdamOptimizer(adam_learning_rate,
         adam_beta1, adam_beta2)
 
-mid_output = CNN_net(trainInData)
+mid_output_train = CNN_net(trainInData)
+mid_output_test = CNN_net(testInData)
 if energy_calc_siz == 'sqr':
     if prefixed:
         denseVec = tf.Variable(np.float32(K))
     else:
         denseVec = tf.Variable(tf.random_normal([out_siz],0,0.5))
-    tmpVar = tf.multiply(tf.reshape(mid_output,[-1,out_siz]),
+    tmpVar_train = tf.multiply(tf.reshape(mid_output_train,[-1,out_siz]),
             denseVec)
-    tmpVar = tf.reduce_sum( tf.square( tmpVar ), 1)
-    y_output = tf.reshape(tmpVar,[-1,1])
+    tmpVar_train = tf.reduce_sum( tf.square( tmpVar_train ), 1)
+    y_output_train = tf.reshape(tmpVar_train,[-1,1])
+    tmpVar_test = tf.multiply(tf.reshape(mid_output_test,[-1,out_siz]),
+            denseVec)
+    tmpVar_test = tf.reduce_sum( tf.square( tmpVar_test ), 1)
+    y_output_test = tf.reshape(tmpVar_test,[-1,1])
 else:
     denseMat1 = tf.Variable(tf.random_normal([out_siz,energy_calc_siz]))
     bias1 = tf.Variable(tf.random_normal([energy_calc_siz]))
     denseMat2 =  tf.Variable(tf.random_normal([energy_calc_siz,1]))
-    tmpVar = tf.matmul(tf.reshape(mid_output,[-1,out_siz]),
+    tmpVar = tf.matmul(tf.reshape(mid_output_train,[-1,out_siz]),
             denseMat1)
     tmpVar = tf.nn.relu( tf.nn.bias_add(tmpVar,bias1))
     y_output = tf.reshape(tf.matmul(tmpVar,denseMat2),[-1,1,1])
 
 L2_loss_train = tf.reduce_mean(tf.divide(tf.sqrt(tf.squared_difference(trainOutData,
-    y_output)),trainOutData))
+    y_output_train)),trainOutData))
 
-loss_train = tf.reduce_mean(tf.squared_difference(trainOutData, y_output))
+loss_train = tf.reduce_mean(tf.squared_difference(trainOutData, y_output_train))
 
-L2_loss_mid = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
-        tf.squared_difference(mid_output, trainMidData)),1)),trainNorm))
+L2_loss_mid_train = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
+        tf.squared_difference(mid_output_train, trainMidData)),1)),trainNorm))
 
-loss_mid =  tf.reduce_mean(tf.squared_difference(mid_output,
+loss_mid_train =  tf.reduce_mean(tf.squared_difference(mid_output_train,
     trainMidData))
 
-train_step = optimizer_adam.minimize(loss_train)
+L2_loss_test = tf.reduce_mean(tf.divide(tf.sqrt(tf.squared_difference(testOutData,
+    y_output_test)),testOutData))
+
+loss_test = tf.reduce_mean(tf.squared_difference(testOutData, y_output_test))
+
+L2_loss_mid_test = tf.reduce_mean(tf.divide(tf.sqrt(tf.reduce_sum(tf.squeeze(
+        tf.squared_difference(mid_output_test, testMidData)),1)),testNorm))
+
+loss_mid_test =  tf.reduce_mean(tf.squared_difference(mid_output_test,
+    testMidData))
+
+train_step = optimizer_adam.minimize(loss_train,global_step=global_steps)
 
 # Initialize Variables
 init = tf.global_variables_initializer()
@@ -144,18 +173,27 @@ sess.run(init)
 MODEL_SAVE_PATH = "train_model_energy/"
 MODEL_NAME = "cnn_"+str(prefixed)+"_0_p_model"
 for it in range(max_iter):
-    rand_x,rand_h,rand_y,ynorm = gen_energy_uni_data(freqmag[-1],freqidx,K,batch_siz,sig)
+    rand_x,rand_h,rand_y,ynorm = gen_energy_uni_data(freqmag[0],freqidx,K,batch_siz,sig)
 
     train_dict = {trainInData: rand_x, trainOutData: rand_y,
                   trainMidData: rand_h, trainNorm: ynorm}
     if it % report_freq == 0:
-        [temp_train_loss,temp_mid,mid] = sess.run([loss_train,loss_mid,mid_output],
+        [temp_train,temp_train_l2,temp_mid,temp_mid_l2] = sess.run([
+                                                loss_train,L2_loss_train,
+                                                loss_mid_train,L2_loss_mid_train],
                                     feed_dict=train_dict)
-        print("Iter # %6d: Mid loss: %10e Train Loss: %10e." % (it+1,temp_mid,temp_train_loss))
+        print("Iter # %6d: Mid loss: %10e Train Loss: %10e." % (it,temp_mid_l2,temp_train_l2))
 
     sess.run(train_step, feed_dict=train_dict)
-saver.save(sess, MODEL_SAVE_PATH + MODEL_NAME+".ckpt")
+#saver.save(sess, MODEL_SAVE_PATH + MODEL_NAME+".ckpt")
 # ========= Testing ============
-
+test_x,test_h,test_y,test_ynorm = gen_energy_uni_data(freqmag[0],freqidx,K,test_batch_siz,sig)
+test_dict = {testInData: test_x, testOutData: test_y,
+                  testMidData: test_h, testNorm: test_ynorm}
+[test,test_l2,test_mid,test_mid_l2] = sess.run([
+                                                loss_test,L2_loss_test,
+                                                loss_mid_test,L2_loss_mid_test],
+                                    feed_dict=test_dict)
+print("test: Mid loss: %10e Train Loss: %10e." % (test_mid_l2,test_l2))
 
 sess.close()

@@ -23,14 +23,16 @@ paras = json.load(json_file)
 butterfly = paras['butterfly']
 input_size = paras['inputSize']
 prefixed = paras['prefixed']
-N = input_size//2
+N = input_size
+#N = input_size//2
 in_siz = input_size*2
 en_mid_siz = 16
 de_mid_siz = 32
-out_siz = input_size
+out_siz = input_size*2
 in_range = np.float32([0,1])
 en_mid_range = np.float32([0,en_mid_siz/in_siz])
-de_mid_range = np.float32([0,de_mid_siz/in_siz])
+de_mid_range = np.float32([-en_mid_siz/in_siz,en_mid_siz/in_siz])
+#de_mid_range = np.float32([0,de_mid_siz/in_siz])
 out_range = np.float32([0,1])
 sig = paras['sigma']
 freqidx = range(en_mid_siz//2)
@@ -82,12 +84,16 @@ global_steps=tf.Variable(0, trainable=False)
 
 #=========================================================
 #----- Training Preparation
-en_butterfly_net = ButterflyLayer(2*N, in_siz, en_mid_siz, False,
+#en_butterfly_net = ButterflyLayer(2*N, in_siz, en_mid_siz, False,
+#        channel_siz, en_nlvl, -1, True,
+#        in_range, en_mid_range)
+
+en_butterfly_net = ButterflyLayer(N, in_siz, en_mid_siz, False,
         channel_siz, en_nlvl, -1, True,
         in_range, en_mid_range)
 
-middle_net = MiddleLayer(in_siz, en_mid_siz, de_mid_siz, a[::(2**10//N)],
-                                    sine = True, prefixed = 2, std = 0.03)
+middle_net = MiddleLayer(in_siz, en_mid_siz, de_mid_siz, sine = True,
+                        a = a[::(2**10//N)], prefixed = 2, std = 0.03)
 
 de_butterfly_net = ButterflyLayer(N, de_mid_siz, out_siz, False,
         channel_siz, de_nlvl, 1, True,
@@ -127,8 +133,8 @@ train_dict = {trainInData: f_train_it, trainInNorm: f_norm_it,
               trainMidData: y_train_it, trainMidNorm: y_norm_it,
               trainOutData: u_train_it, trainOutNorm: u_norm_it}
 
-train_loss = sess.run(L2_loss_train_u,feed_dict=train_dict)
-print("Train Loss: %10e." % (train_loss))
+#train_loss = sess.run(L2_loss_train_u,feed_dict=train_dict)
+#print("Train Loss: %10e." % (train_loss))
 
 for n in tf.global_variables():
     np.save('tftmp/'+n.name.split(':')[0], n.eval(session=sess))
