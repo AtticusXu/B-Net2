@@ -14,12 +14,12 @@
     "batchSize": 256,
     "channelSize": 12,
     "trainset": 4096,
-    "maxIter": 10000,
+    "maxIter": 20000,
     "reportFreq": 20,
     "recordFreq": 100,
     "ADAMparas": {
-        "learningRate": 5.0e-04,
-        "learningRatedecay": 0.97,
+        "learningRate": 5.0e-03,
+        "learningRatedecay": 0.98,
         "beta1": 0.9,
         "beta2": 0.999
     }
