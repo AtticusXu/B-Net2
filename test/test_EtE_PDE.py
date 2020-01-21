@@ -3,17 +3,11 @@ os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 import sys
 sys.path.insert(0,"../src")
 sys.path.insert(0,"../src/data_gen")
-from pathlib import Path
-import math
 import numpy as np
-import scipy.io as spio
 import tensorflow as tf
-from ODE_matrix import DirSineElliptic, Dir_2_Elliptic
-import matplotlib.pyplot as plt
+from ODE_matrix import DirSineElliptic
 import json
 tf.reset_default_graph() 
-from gaussianfun import gaussianfun
-from gen_dft_data import gen_ete_Ell_data
 from Bi_ButterflyLayer import ButterflyLayer
 from Bi_CNNLayer import CNNLayer
 from middle_layer import MiddleLayer
