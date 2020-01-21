@@ -3,21 +3,18 @@ os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 import sys
 sys.path.insert(0,"../src")
 sys.path.insert(0,"../src/data_gen")
-from pathlib import Path
-import math
 import numpy as np
-import scipy.io as spio
 import tensorflow as tf
-import json
-
-from gaussianfun import gaussianfun
 from gen_dft_data import gen_degree_data
 from ButterflyLayer import ButterflyLayer
 
-N = 1024
+N = 16384
+#can be changed for different N
 Ntrain = N
 in_siz = N
-out_siz = 256
+K = 64
+#can be changed for different K
+out_siz = K*2
 in_range = np.float32([0,1])
 out_range = np.float32([0,out_siz//2])
 prefixed = 'true'
@@ -32,9 +29,9 @@ for r in range (3,7):
 
         
     
-        channel_siz = 4*r # Num of interp pts on each dim
+        channel_siz = 4*r 
         nlvl = l
-        # Filter size for the input and output
+        
 
 
         print("======== Parameters =========")
