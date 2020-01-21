@@ -91,37 +91,13 @@ class ButterflyLayer(tf.keras.layers.Layer):
         
         #----------------
         # Setup preparation layer weights
-        
-        
-        
-        if self.prep:
-            NG = int(self.channel_siz/4)
-            ChebNodes = (np.cos(np.array(range(2*NG-1,0,-2))/2/NG*math.pi) +
-                         1)/2
-            xNodes = np.arange(0,1,1.0/self.in_filter_siz)
-            LMat = LagrangeMat(ChebNodes,xNodes)                         
-            mat = np.empty((self.in_filter_siz,1,self.channel_siz))
-            kcen = np.mean(self.out_range)
-            xlen = (self.in_range[1] - self.in_range[0])/2**self.nlvl
-            for it in range(0,NG):
-                KVal = np.exp(-2*math.pi*1j*kcen*(xNodes-ChebNodes[it])*xlen)
-                LVec = np.squeeze(LMat[:,it])
-                mat[:,0,4*it]   =  np.multiply(KVal.real,LVec)
-                mat[:,0,4*it+1] =  np.multiply(KVal.imag,LVec)
-                mat[:,0,4*it+2] = -np.multiply(KVal.real,LVec)
-                mat[:,0,4*it+3] = -np.multiply(KVal.imag,LVec)
-
-            self.InFilterVar = tf.Variable( mat.astype(np.float32),
-                name="Filter_In" ,trainable=False )
-            self.InBiasVar = tf.Variable( tf.zeros([self.channel_siz]),
-                name="Bias_In" ,trainable=False )
-        else:
-            self.InFilterVar = tf.Variable( tf.random_normal(
-            [self.in_filter_siz, 1, self.channel_siz],0,std), name="Filter_In_ran")
-            self.InBiasVar = tf.Variable( tf.zeros([self.channel_siz]),
+        self.InFilterVar = tf.Variable( tf.random_normal(
+        [self.in_filter_siz, 1, self.channel_siz],0,std), name="Filter_In_ran")
+        self.InBiasVar = tf.Variable( tf.zeros([self.channel_siz]),
                                          name="Bias_In_ran" )
-            tf.summary.histogram("Filter_In_ran", self.InFilterVar)
-            tf.summary.histogram("Bias_In_ran", self.InBiasVar)
+        tf.summary.histogram("Filter_In_ran", self.InFilterVar)
+        tf.summary.histogram("Bias_In_ran", self.InBiasVar)
+        
         # ell Layer
         self.FilterVars = []
         self.BiasVars = []

@@ -1,6 +1,6 @@
 {
     "butterfly": true,
-    "linear": false,
+    "linear": true,
     "inputSize": 128,
     "outputSize": 16,
     "energyCalcSize": "sqr",
@@ -9,17 +9,17 @@
     "nlvl": 5,
     "klvl": 3,
     "alpha" : 2,
-    "Ntest": 16384,
-    "prefixed": false,
+    "Ntest": 5000,
+    "prefixed": true,
     "batchSize": 256,
     "channelSize": 12,
-    "trainset": 4096,
-    "maxIter": 20000,
+    "trainset": 20000,
+    "maxIter": 1000,
     "reportFreq": 20,
     "recordFreq": 100,
     "ADAMparas": {
-        "learningRate": 5.0e-03,
-        "learningRatedecay": 0.98,
+        "learningRate": 2.0e-05,
+        "learningRatedecay": 0.985,
         "beta1": 0.9,
         "beta2": 0.999
     }

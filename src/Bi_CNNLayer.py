@@ -90,16 +90,21 @@ class CNNLayer(tf.keras.layers.Layer):
         channel_siz    = self.channel_siz
         in_filter_siz  = self.in_filter_siz
         out_filter_siz = self.out_filter_siz
+        sig            = self.sig
 
+        if sig ==-1:
+            coder = 'en_'
+        else:
+            coder = 'de_'
         #----------------
         # Setup preparation layer weights
         
         self.InFilterVar = tf.Variable( tf.random_normal(
-            [in_filter_siz, 1, channel_siz],0,std), name="Filter_In_ran")
+            [in_filter_siz, 1, channel_siz],0,std), name=coder+"Filter_In_ran")
         self.InBiasVar = tf.Variable( tf.zeros([channel_siz]),
-                                         name="Bias_In_ran" )
-        tf.summary.histogram("Filter_In_ran", self.InFilterVar)
-        tf.summary.histogram("Bias_In_ran", self.InBiasVar)
+                                         name=coder+"Bias_In_ran" )
+        tf.summary.histogram(coder+"Filter_In_ran", self.InFilterVar)
+        tf.summary.histogram(coder+"Bias_In_ran", self.InBiasVar)
         # ell Layer
         self.FilterVars = []
         self.BiasVars = []
@@ -111,11 +116,11 @@ class CNNLayer(tf.keras.layers.Layer):
             filterVar = tf.Variable(
                         tf.random_normal([1,2**(lvl-1)*channel_siz,
                             2**lvl*channel_siz],0,std),
-                        name="Filter_"+varLabel )
+                        name=coder+"Filter_"+varLabel )
             biasVar = tf.Variable(tf.zeros([2**lvl*channel_siz]),
-                        name="Bias_"+varLabel )
-            tf.summary.histogram("Filter_"+varLabel, filterVar)
-            tf.summary.histogram("Bias_"+varLabel, biasVar)
+                        name=coder+"Bias_"+varLabel )
+            tf.summary.histogram(coder+"Filter_"+varLabel, filterVar)
+            tf.summary.histogram(coder+"Bias_"+varLabel, biasVar)
             self.FilterVars.append(filterVar)
             self.BiasVars.append(biasVar)
             
@@ -124,11 +129,11 @@ class CNNLayer(tf.keras.layers.Layer):
             filterVar = tf.Variable(
                         tf.random_normal([2,2**(lvl-1)*channel_siz,
                             2**lvl*channel_siz],0,std),
-                        name="Filter_"+varLabel )
+                        name=coder+"Filter_"+varLabel )
             biasVar = tf.Variable(tf.zeros([2**lvl*channel_siz]),
-                        name="Bias_"+varLabel )
-            tf.summary.histogram("Filter_"+varLabel, filterVar)
-            tf.summary.histogram("Bias_"+varLabel, biasVar)
+                        name=coder+"Bias_"+varLabel )
+            tf.summary.histogram(coder+"Filter_"+varLabel, filterVar)
+            tf.summary.histogram(coder+"Bias_"+varLabel, biasVar)
             self.FilterVars.append(filterVar)
             self.BiasVars.append(biasVar)
         
@@ -137,11 +142,11 @@ class CNNLayer(tf.keras.layers.Layer):
             filterVar = tf.Variable(
                         tf.random_normal([2,2**k2lvl*channel_siz,
                             2**k2lvl*channel_siz],0,std),
-                        name="Filter_"+varLabel )
+                        name=coder+"Filter_"+varLabel )
             biasVar = tf.Variable(tf.zeros([2**k2lvl*channel_siz]),
-                        name="Bias_"+varLabel )
-            tf.summary.histogram("Filter_"+varLabel, filterVar)
-            tf.summary.histogram("Bias_"+varLabel, biasVar)
+                        name=coder+"Bias_"+varLabel )
+            tf.summary.histogram(coder+"Filter_"+varLabel, filterVar)
+            tf.summary.histogram(coder+"Bias_"+varLabel, biasVar)
             self.FilterVars.append(filterVar)
             self.BiasVars.append(biasVar)
 
@@ -151,7 +156,7 @@ class CNNLayer(tf.keras.layers.Layer):
             varLabel = "Filter_Out_%04d_ran" % (itk)
             denseVar = tf.Variable(
                     tf.random_normal([channel_siz,
-                        out_filter_siz],0,std),name=varLabel)
+                        out_filter_siz],0,std),name=coder+varLabel)
             tf.summary.histogram(varLabel, denseVar)
             self.FeaDenseVars.append(denseVar)
 

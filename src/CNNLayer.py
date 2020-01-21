@@ -73,21 +73,14 @@ class CNNLayer(tf.keras.layers.Layer):
         std = 0.35
         
         # Preparation Layer
-        if self.prep:
-            mat = np.load('tftmp/Filter_In.npy')
-            self.InFilterVar = tf.Variable( mat.astype(np.float32),
-                                           name="Filter_In",trainable=False )
-            mat = np.load('tftmp/Bias_In.npy')
-            self.InBiasVar = tf.Variable( mat.astype(np.float32),
-                                         name="Bias_In",trainable=False )
-        else:
-            self.InFilterVar = tf.Variable( tf.random_normal(
+        self.InFilterVar = tf.Variable( tf.random_normal(
                     [self.in_filter_siz, 1, self.channel_siz],0,std),
                         name="Filter_In_ran" )
-            self.InBiasVar = tf.Variable( tf.zeros([self.channel_siz]),
+        self.InBiasVar = tf.Variable( tf.zeros([self.channel_siz]),
                                          name="Bias_In_ran" )
-            tf.summary.histogram("Filter_In_ran", self.InFilterVar)
-            tf.summary.histogram("Bias_In_ran", self.InBiasVar)
+        tf.summary.histogram("Filter_In_ran", self.InFilterVar)
+        tf.summary.histogram("Bias_In_ran", self.InBiasVar)
+        
         # ell Layer
         self.FilterVars = []
         self.BiasVars = []

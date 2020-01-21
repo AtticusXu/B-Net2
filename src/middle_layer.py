@@ -72,21 +72,6 @@ class MiddleLayer(tf.keras.layers.Layer):
             
             return(de_mid_data)
         
-        #if prefixed == 1:
-        #    de_mid_data = tf.multiply(en_mid_data,self.mid_DenseVar)
-        #    de_mid_data = tf.reshape(de_mid_data,(np.size(in_data,0),de_mid_siz,1))
-        #    return(de_mid_data)
-        #if sine:
-            #de_mid_data_id = np.reshape([], (0, en_mid_siz//2,1))
-            #for i in range(np.size(in_data,0)):
-            #    tmpVar = en_mid_data[i]
-            #    tmpVar = -tf.matmul(self.mid_DenseVar,tmpVar)
-            #    tmpVar = tf.reshape(tmpVar,(1,de_mid_siz//2,1))
-            #    de_mid_data_id = tf.concat([de_mid_data_id, tmpVar], axis=0)
-            #de_mid_data_r = np.zeros((np.size(in_data,0),de_mid_siz//2,1))
-            #de_mid_data = tf.reshape(tf.concat((de_mid_data_r,de_mid_data_id),2),
-            #                         (np.size(in_data,0), en_mid_siz, 1))
-            #return(de_mid_data,de_mid_data_i0[0])
             
         
     def buildrandom(self):
@@ -107,38 +92,7 @@ class MiddleLayer(tf.keras.layers.Layer):
                                         name = "Dense_mid_str")
         tf.summary.histogram("Dense_mid_str", self.mid_DenseVar)
         
-    def buildWinverse(self):
-        de_mid_siz = self.de_mid_siz
-        a = self.a
-        # Mid Layer
-        k = np.zeros(de_mid_siz)
-        for i in range(de_mid_siz//2):
-            k[2*i] = i-de_mid_siz//4
-            k[2*i+1] = i-de_mid_siz//4
-        mat1 = np.empty((de_mid_siz,de_mid_siz))
-        for i in range(0,de_mid_siz//2):
-            for j in range(0,de_mid_siz//2):
-                p = (i-j + de_mid_siz//4)%(de_mid_siz//2)
-                mat1[2*i,2*j] = -a[p*2]*k[p*2]*k[2*j]
-                mat1[2*i,2*j+1] = a[p*2+1]*k[p*2+1]*k[2*j+1]
-                mat1[2*i+1,2*j] = -a[p*2+1]*k[p*2+1]*k[2*j]
-                mat1[2*i+1,2*j+1] = -a[p*2]*k[p*2]*k[2*j+1]
-        #print(mat1[0])
-        mat2 = np.empty((de_mid_siz,de_mid_siz))
-        for i in range(0,de_mid_siz//2):
-            for j in range(0,de_mid_siz//2):
-                p = (i-j + de_mid_siz//4)%(de_mid_siz//2)
-                mat2[2*i,2*j] = -a[p*2]*k[2*j]**2
-                mat2[2*i,2*j+1] = a[p*2+1]*k[2*j+1]**2
-                mat2[2*i+1,2*j] = -a[p*2+1]*k[2*j]**2
-                mat2[2*i+1,2*j+1] = -a[p*2]*k[2*j+1]**2
-        #print(mat2[0])
-        mat = mat1 + mat2
-        #print(mat)
-        #mat =np.linalg.inv(mat)
-        self.mid_DenseVar = tf.Variable(mat.astype(np.float32),
-                                        name = "Dense_mid_ran")
-        tf.summary.histogram("Dense_mid_ran", self.mid_DenseVar)
+
     
     def buildSineInverse(self):
         en_mid_siz = self.en_mid_siz
@@ -153,12 +107,9 @@ class MiddleLayer(tf.keras.layers.Layer):
         mat_relu = np.empty((2*K2,K1))
         mat_relu[:K2,:] = mat
         mat_relu[K2:,:] = -mat
-        #print(mat_relu[:,2])
         b_relu = np.zeros(2*K2)
         self.mid_DenseVar_relu = tf.Variable(mat_relu.astype(np.float32),
                                         name = "Dense_mid_str")
-        #self.mid_DenseVar= tf.Variable(mat.astype(np.float32),
-        #                                name = "Dense_mid_str")
         self.mid_Bias = tf.Variable(b_relu.astype(np.float32),
                                         name = "Bias_mid_str")
         
