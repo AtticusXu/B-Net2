@@ -9,6 +9,7 @@ All code were developed on Windows 10 and tested on CentOS 7 with Python 3.6, an
 ## Experiment
 
 | Experiment                                   | initialization                             | training & testing                                                       |
+| ---                                          | ---                                        | ---                                            | ---                       |
 | 4.1.1. APPROXIMATION POWER BEFORE TRAINING   | ---                                        | test_Fourier_beforetrain.py                                               |
 | 4.1.2. APPROXIMATION POWER AFTER TRAINING    | Butterfly_FTini.py                         | test_Fourier_aftertrain.py                                               |
 | 4.1.3. TRANSFER LEARNING CAPABILITY          | ---                                        | test_Fourier_trans_train.py & test_Fourier_trans_eval.py  |
