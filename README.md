@@ -9,7 +9,7 @@ All code was developed on Windows 10 and tested on CentOS 7 with Python 3.6, and
 ## Experiment
 
 all the experiments are done via code in the folder 'test', while other sources are in the folder 'src'.
-| Experiment                                     | example of config file    | training                    | testing          | plot             |
+| Experiment                                | preaperation              | training                    | testing          | plot             |
 | ---                                       | ---                       | ---                         | ---              | ---              |
 | Convection-Diffusion Equations            | checkpoint/linpde.yaml    | learn_variantcoelinear2d.py | linpdetest.py    | linpdeplot.py    |
 | Diffusion Equations with Nonlinear Source | checkpoint/nonlinpde.yaml | learn_singlenonlinear2d.py  | nonlinpdetest.py | nonlinpdeplot.py |
