@@ -1,2 +1,0 @@
-model_checkpoint_path: "fft_True_0_p_model.ckpt"
-all_model_checkpoint_paths: "fft_True_0_p_model.ckpt"
